@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Download, Save, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Cloud, CloudUpload, Download, Laptop, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,12 +18,8 @@ import type { EditorColumn, RawExtraction } from "@/domain/types";
 import type { EditorState } from "@/editor/engine";
 import { allIssues } from "@/domain/invoice-checks";
 import { buildExportRows, runExport, type ExportScope } from "@/export";
-import {
-  deleteTemplate,
-  listTemplates,
-  saveTemplate,
-  type SavedExportTemplate,
-} from "@/export/templates";
+import { useTemplates, type TemplateEntry } from "@/cloud/useTemplates";
+import { headerOverridesFor, orderColumnsByTemplate } from "@/export/templates";
 import { useI18n } from "@/i18n";
 
 interface Props {
@@ -41,39 +37,49 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
   const [format, setFormat] = useState<"csv" | "xlsx">("xlsx");
   const [delimiter, setDelimiter] = useState<"," | ";" | "\t">(",");
   const [bom, setBom] = useState(true);
-  const [templates, setTemplates] = useState<SavedExportTemplate[]>([]);
   const [templateName, setTemplateName] = useState("");
+  const [syncAccount, setSyncAccount] = useState(true);
+  // Column order / headers taken from an applied template; applied at export time only.
+  const [shape, setShape] = useState<Pick<TemplateEntry, "name" | "fieldOrder" | "headers"> | null>(
+    null,
+  );
+  const tpl = useTemplates(open);
 
-  // Load saved templates when the dialog opens (client-only; localStorage).
-  useEffect(() => {
-    if (open) setTemplates(listTemplates());
-  }, [open]);
-
-  const applyTemplate = (tpl: SavedExportTemplate) => {
-    setFormat(tpl.format.type);
-    setDelimiter(tpl.format.delimiter);
-    setBom(tpl.format.utf8Bom);
-    toast.success(t("export.templateApplied", { name: tpl.name }));
+  const applyTemplate = (entry: TemplateEntry) => {
+    setFormat(entry.format.type);
+    setDelimiter(entry.format.delimiter);
+    setBom(entry.format.utf8Bom);
+    setShape({ name: entry.name, fieldOrder: entry.fieldOrder, headers: entry.headers });
+    toast.success(t("export.templateApplied", { name: entry.name }));
   };
 
-  const onSaveTemplate = () => {
+  const onSaveTemplate = async () => {
     const name = templateName.trim();
     if (!name) return;
-    saveTemplate({
-      name,
-      format: { type: format, delimiter, utf8Bom: bom },
-      fieldOrder: columns.map((c) => c.fieldId),
-      headers: {},
-    });
-    setTemplates(listTemplates());
-    setTemplateName("");
-    toast.success(t("export.templateSaved", { name }));
+    const ok = await tpl.save(
+      {
+        name,
+        format: { type: format, delimiter, utf8Bom: bom },
+        fieldOrder: (shape ? orderColumnsByTemplate(columns, shape.fieldOrder) : columns).map(
+          (c) => c.fieldId,
+        ),
+        headers: shape?.headers ?? {},
+      },
+      tpl.canSync && syncAccount ? "account" : "device",
+    );
+    if (ok) {
+      setTemplateName("");
+      toast.success(t("export.templateSaved", { name }));
+    }
   };
 
-  const onDeleteTemplate = (id: string) => {
-    deleteTemplate(id);
-    setTemplates(listTemplates());
-    toast(t("export.templateDeleted"));
+  const onDeleteTemplate = async (entry: TemplateEntry) => {
+    if (await tpl.remove(entry)) toast(t("export.templateDeleted"));
+  };
+
+  const onCopyToAccount = async (entry: TemplateEntry) => {
+    if (await tpl.copyToAccount(entry))
+      toast.success(t("export.copiedToAccount", { name: entry.name }));
   };
 
   const rows = useMemo(() => buildExportRows(raw, state, columns), [raw, state, columns]);
@@ -86,13 +92,15 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
   const hasNeedsReview = validCount < total;
 
   const doExport = () => {
+    const exportColumns = shape ? orderColumnsByTemplate(columns, shape.fieldOrder) : columns;
     const result = runExport({
       raw,
       state,
-      columns,
+      columns: exportColumns,
       locale,
       scope,
       format: { type: format, delimiter, utf8Bom: bom },
+      ...(shape ? { headerOverrides: headerOverridesFor(exportColumns, shape.headers) } : {}),
     });
     if (result.rowCount === 0) {
       toast.error(t("export.emptyScope"));
@@ -103,7 +111,13 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (o) toast.dismiss(); // keep toasts from covering the dialog's buttons
+        setOpen(o);
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           size="sm"
@@ -190,35 +204,91 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
 
           <section className="space-y-2 border-t pt-3">
             <h3 className="font-medium">{t("export.templatesTitle")}</h3>
-            {templates.length === 0 ? (
+            {shape && (
+              <p className="flex flex-wrap items-center gap-2 rounded bg-accent/60 px-2 py-1.5 text-xs">
+                <span>{t("export.orderApplied", { name: shape.name })}</span>
+                <button
+                  type="button"
+                  className="text-primary underline underline-offset-2"
+                  onClick={() => setShape(null)}
+                >
+                  {t("export.orderClear")}
+                </button>
+              </p>
+            )}
+            {tpl.loading && (
+              <p className="text-xs text-muted-foreground">{t("export.loadingTemplates")}</p>
+            )}
+            {tpl.error && (
+              <p
+                role="alert"
+                className="rounded bg-destructive/10 px-2 py-1.5 text-xs text-destructive"
+              >
+                {t(`export.cloudError.${tpl.error}`)}
+              </p>
+            )}
+            {tpl.entries.length === 0 ? (
               <p className="text-xs text-muted-foreground">{t("export.noTemplates")}</p>
             ) : (
               <ul className="space-y-1">
-                {templates.map((tpl) => (
+                {tpl.entries.map((entry) => (
                   <li
-                    key={tpl.id}
+                    key={`${entry.location}:${entry.id}`}
                     className="flex items-center gap-2 rounded border px-2 py-1 text-xs"
                   >
-                    <span className="flex-1 truncate" title={tpl.name}>
-                      {tpl.name}
+                    <span
+                      className="shrink-0 text-muted-foreground"
+                      title={t(
+                        entry.location === "account"
+                          ? "export.locationAccount"
+                          : "export.locationDevice",
+                      )}
+                    >
+                      {entry.location === "account" ? (
+                        <Cloud className="size-3.5" aria-hidden />
+                      ) : (
+                        <Laptop className="size-3.5" aria-hidden />
+                      )}
+                      <span className="sr-only">
+                        {t(
+                          entry.location === "account"
+                            ? "export.locationAccount"
+                            : "export.locationDevice",
+                        )}
+                      </span>
+                    </span>
+                    <span className="min-w-0 flex-1 truncate" title={entry.name}>
+                      {entry.name}
                     </span>
                     <span className="shrink-0 text-muted-foreground">
-                      {tpl.format.type.toUpperCase()}
-                      {tpl.format.type === "csv" && tpl.format.utf8Bom ? " · BOM" : ""}
+                      {entry.format.type.toUpperCase()}
+                      {entry.format.type === "csv" && entry.format.utf8Bom ? " · BOM" : ""}
                     </span>
                     <Button
                       size="sm"
                       variant="outline"
                       className="h-6 px-2"
-                      onClick={() => applyTemplate(tpl)}
+                      onClick={() => applyTemplate(entry)}
                     >
                       {t("export.apply")}
                     </Button>
+                    {entry.location === "device" && tpl.canSync && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-1 text-muted-foreground"
+                        onClick={() => void onCopyToAccount(entry)}
+                        aria-label={t("export.copyToAccount")}
+                        title={t("export.copyToAccount")}
+                      >
+                        <CloudUpload className="size-3.5" aria-hidden />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-6 px-1 text-muted-foreground"
-                      onClick={() => onDeleteTemplate(tpl.id)}
+                      onClick={() => void onDeleteTemplate(entry)}
                       aria-label={t("export.delete")}
                       title={t("export.delete")}
                     >
@@ -235,20 +305,36 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
                 placeholder={t("export.templateName")}
                 className="h-7 text-xs"
                 aria-label={t("export.templateName")}
+                maxLength={80}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") onSaveTemplate();
+                  if (e.key === "Enter") void onSaveTemplate();
                 }}
               />
               <Button
                 size="sm"
                 variant="outline"
                 className="h-7 shrink-0 px-2 text-xs"
-                onClick={onSaveTemplate}
+                onClick={() => void onSaveTemplate()}
                 disabled={!templateName.trim()}
               >
                 <Save aria-hidden /> {t("export.saveTemplate")}
               </Button>
             </div>
+            {tpl.canSync && (
+              <label className="flex items-start gap-2 text-xs">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={syncAccount}
+                  onCheckedChange={(v) => setSyncAccount(v === true)}
+                />
+                <span>
+                  {t("export.syncToAccount")}
+                  <span className="block text-[11px] text-muted-foreground">
+                    {t("export.syncHint")}
+                  </span>
+                </span>
+              </label>
+            )}
             <p className="text-[11px] text-muted-foreground">{t("export.templateHint")}</p>
           </section>
 

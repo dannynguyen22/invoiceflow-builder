@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { FileSpreadsheet } from "lucide-react";
 import { useI18n } from "@/i18n";
+import { AccountMenu } from "./AccountMenu";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const NAV = [
@@ -13,11 +14,17 @@ export function AppHeader() {
   const { t } = useI18n();
   return (
     <header className="sticky top-0 z-30 border-b bg-paper">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:rounded focus:bg-primary focus:px-3 focus:py-1 focus:text-primary-foreground">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:rounded focus:bg-primary focus:px-3 focus:py-1 focus:text-primary-foreground"
+      >
         {t("nav.skipToContent")}
       </a>
       <div className="flex h-12 items-center gap-3 px-4 sm:gap-4">
-        <Link to="/" className="flex shrink-0 items-center gap-2 text-[15px] font-semibold text-foreground">
+        <Link
+          to="/"
+          className="flex shrink-0 items-center gap-2 text-[15px] font-semibold text-foreground"
+        >
           <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <FileSpreadsheet className="size-3.5" aria-hidden />
           </span>
@@ -36,8 +43,9 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <div className="ml-auto shrink-0">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <LanguageSwitcher />
+          <AccountMenu />
         </div>
       </div>
     </header>

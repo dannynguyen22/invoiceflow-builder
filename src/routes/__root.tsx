@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useI18n, translate } from "../i18n";
+import { AuthProvider } from "../cloud/auth";
 import { AppHeader } from "../components/shell/AppHeader";
 import { Toaster } from "../components/ui/sonner";
 
@@ -23,9 +24,7 @@ function NotFoundComponent() {
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">{t("notFound.title")}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("notFound.body")}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("notFound.body")}</p>
         <div className="mt-6">
           <Link
             to="/"
@@ -50,12 +49,8 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          {t("error.title")}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("error.body")}
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("error.title")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("error.body")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -100,12 +95,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&display=swap&subset=vietnamese",
-      },
     ],
   }),
   shellComponent: RootShell,
@@ -133,12 +122,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <AppHeader />
-      <main id="main">
-        <Outlet />
-      </main>
-      <Toaster position="bottom-right" />
+      <AuthProvider>
+        <AppHeader />
+        <main id="main">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </main>
+        <Toaster position="bottom-right" />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

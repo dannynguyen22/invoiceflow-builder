@@ -66,7 +66,7 @@ const LABELS: [Role, string[], Section?][] = [
   ["ignore", ["thue suat", "thue suat gtgt", "vat rate", "tax rate", "so tai khoan", "dien thoai", "account no", "phone", "tel", "fax", "email", "website", "hinh thuc thanh toan", "payment method"]],
 ];
 
-const norm = (s: string) =>
+export const norm = (s: string) =>
   normalizeForSearch(s)
     .replace(/[^a-z0-9 ]+/g, " ")
     .replace(/\s+/g, " ")
@@ -119,7 +119,10 @@ export function matchLabel(segment: string): LabelHit | null {
 
 // ---------- value extraction ----------
 
-type Extract = { tokens: OCRToken[]; value: string } | null;
+export type Extract = { tokens: OCRToken[]; value: string } | null;
+
+export const SECTION_BUYER_RE = /\b(nguoi mua|ben mua|don vi mua|buyer|khach hang)\b/;
+export const SECTION_SELLER_RE = /\b(nguoi ban|ben ban|don vi ban|seller)\b/;
 
 const TAX_RE = /\d{10}(?:-\d{3})?/;
 const DATE_RES = [/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/, /^(\d{4})-(\d{2})-(\d{2})$/];
@@ -148,7 +151,7 @@ export function normalizeAmount(text: string): string | null {
   return null;
 }
 
-function extractValue(field: FieldId, tokens: OCRToken[]): Extract {
+export function extractValue(field: FieldId, tokens: OCRToken[]): Extract {
   if (!tokens.length) return null;
   switch (field) {
     case "seller_tax_id":
@@ -212,13 +215,13 @@ function resolveRole(role: Role, section: Section): FieldId | null {
 
 // ---------- segments ----------
 
-interface Segment {
+export interface Segment {
   label: OCRToken[];
   value: OCRToken[];
 }
 
 /** Split a line into label/value segments at tokens containing ":". */
-function segments(line: Line): Segment[] {
+export function segments(line: Line): Segment[] {
   const out: Segment[] = [];
   let label: OCRToken[] = [];
   let cur: Segment | null = null;

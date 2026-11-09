@@ -3,6 +3,7 @@ import { CheckCircle2, ListChecks, Pencil, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Cell, FieldCandidate, FieldId, OCRToken } from "@/domain/types";
+import { canLearnField } from "@/editor/smart";
 import { useI18n } from "@/i18n";
 import { normalizeForSearch } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -18,8 +19,8 @@ interface Props {
   onToggleVerified: (verified: boolean) => void;
   /** Open Smart Auto-fill using the selected cell as the example. */
   onAutoFill?: () => void;
-  /** Open Batch Correction for the selected cell's error signature. */
-  onBatchCorrect?: () => void;
+  /** Open Batch Correction; omit when the selected cell has no fixable error signature. */
+  onBatchCorrect?: (() => void) | undefined;
   searchRef?: React.Ref<HTMLInputElement>;
 }
 
@@ -50,8 +51,8 @@ export function CandidatePanel({
     return <p className="p-4 text-sm text-muted-foreground">{t("editor.selectCellHint")}</p>;
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b p-3">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
+      <div className="shrink-0 border-b p-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t(`fields.${columnField}`)}
@@ -105,30 +106,35 @@ export function CandidatePanel({
                 variant="outline"
                 className="h-7 px-2 text-xs"
                 onClick={onAutoFill}
-                disabled={!cell.value.trim()}
-                title={cell.value.trim() ? t("autofill.trigger") : t("autofill.needExample")}
+                disabled={!cell.value.trim() || !canLearnField(columnField)}
+                title={
+                  !canLearnField(columnField)
+                    ? t("autofill.unsupportedField")
+                    : cell.value.trim()
+                      ? t("autofill.trigger")
+                      : t("autofill.needExample")
+                }
               >
                 <Wand2 aria-hidden /> {t("autofill.trigger")}
               </Button>
             )}
-            {onBatchCorrect &&
-              cell.flags.some((f) => f === "invalid_format" || f === "missing") && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs"
-                  onClick={onBatchCorrect}
-                  title={t("batch.trigger")}
-                >
-                  <ListChecks aria-hidden /> {t("batch.trigger")}
-                </Button>
-              )}
+            {onBatchCorrect && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={onBatchCorrect}
+                title={t("batch.trigger")}
+              >
+                <ListChecks aria-hidden /> {t("batch.trigger")}
+              </Button>
+            )}
           </div>
         )}
         <p className="mt-1.5 text-[11px] text-muted-foreground">{t("editor.verifyHint")}</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">{t("editor.editHint")}</p>
       </div>
-      <div className="min-h-0 flex-1 overflow-auto p-3">
+      <div className="p-3">
         <h3 className="text-xs font-semibold">{t("editor.candidatesTitle")}</h3>
         {candidates.length === 0 ? (
           <p className="mt-1 text-xs text-muted-foreground">{t("editor.candidatesEmpty")}</p>

@@ -37,10 +37,9 @@ import { useEditor, type Selection } from "@/editor/useEditor";
 import {
   applyAutoFill,
   applyBatchCorrection,
-  planAutoFill,
-  planBatchCorrection,
-  type AutoFillScope,
-  type ErrorSignature,
+  deriveBatchSignature,
+  type AutoFillPlan,
+  type BatchPlan,
 } from "@/editor/smart";
 import { useI18n, translate } from "@/i18n";
 
@@ -200,36 +199,59 @@ function EditorView({
     : null;
 
   // Smart Auto-fill: learn from the selected cell, propose each other invoice's own value.
-  const onApplyAutoFill = (scope: AutoFillScope, acceptIds: string[]) => {
-    if (!selection) return;
-    const plan = planAutoFill(raw, state, selection.documentId, selection.columnId, scope);
-    const next = apply((s) => applyAutoFill(raw, s, plan, acceptIds).state);
-    const filled = acceptIds.length;
-    toast.success(t("autofill.done", { count: filled }), {
-      action: { label: t("autofill.undo"), onClick: () => undo() },
+  // Protected cells change only when the dialog passes a confirmed override list.
+  const onApplyAutoFill = (plan: AutoFillPlan, acceptIds: string[], overrideIds: string[]) => {
+    let filled = 0;
+    let overridden = 0;
+    apply((s) => {
+      const r = applyAutoFill(raw, s, plan, acceptIds, {
+        overrideProtected: { confirmed: overrideIds.length > 0, documentIds: overrideIds },
+      });
+      filled = r.filled;
+      overridden = r.overridden;
+      return r.state;
     });
-    void next;
+    if (!filled) {
+      toast(t("autofill.nothingChanged"));
+      return;
+    }
+    toast.success(
+      overridden
+        ? t("autofill.doneOverride", { count: filled, protected: overridden })
+        : t("autofill.done", { count: filled }),
+      { action: { label: t("autofill.undo"), onClick: () => undo() } },
+    );
   };
   // Batch Correction: fix other cells that share the selected cell's error signature.
-  const onApplyBatch = (signature: ErrorSignature, sameSupplier: boolean, acceptIds: string[]) => {
-    if (!selection) return;
-    const plan = planBatchCorrection(
-      raw,
-      state,
-      selection.documentId,
-      selection.columnId,
-      signature,
-      sameSupplier,
-    );
-    apply((s) => applyBatchCorrection(raw, s, plan, acceptIds).state);
-    toast.success(t("batch.done", { count: acceptIds.length }), {
-      action: { label: t("editor.undo"), onClick: () => undo() },
+  const onApplyBatch = (plan: BatchPlan, acceptIds: string[], overrideIds: string[]) => {
+    let corrected = 0;
+    let overridden = 0;
+    apply((s) => {
+      const r = applyBatchCorrection(raw, s, plan, acceptIds, {
+        overrideProtected: { confirmed: overrideIds.length > 0, documentIds: overrideIds },
+      });
+      corrected = r.corrected;
+      overridden = r.overridden;
+      return r.state;
     });
+    if (!corrected) {
+      toast(t("batch.nothingChanged"));
+      return;
+    }
+    toast.success(
+      overridden
+        ? t("batch.doneOverride", { count: corrected, protected: overridden })
+        : t("batch.done", { count: corrected }),
+      { action: { label: t("editor.undo"), onClick: () => undo() } },
+    );
   };
-  // The batch signature is the selected cell's first fixable flaw.
-  const batchSignature: ErrorSignature = selectedCell?.flags.includes("invalid_format")
-    ? "invalid_format"
-    : "missing";
+  // The batch signature comes from the flaw the selected cell had before the user fixed it
+  // (or the flaw it still has).
+  const batchInfo = useMemo(
+    () =>
+      selection ? deriveBatchSignature(state, selection.documentId, selection.columnId) : null,
+    [state, selection],
+  );
 
   const previewDocId = selection?.documentId ?? raw.documents[0]?.id ?? null;
   const previewDoc = raw.documents.find((d) => d.id === previewDocId) ?? null;
@@ -453,8 +475,19 @@ function EditorView({
                   selection && onDropToken(selection.documentId, selection.columnId, id)
                 }
                 onEdit={() => setEditing(true)}
-                onAutoFill={() => selection && selectedCell?.value.trim() && setAutoFillOpen(true)}
-                onBatchCorrect={() => selection && setBatchOpen(true)}
+                onAutoFill={() => {
+                  if (!selection || !selectedCell?.value.trim()) return;
+                  toast.dismiss(); // stale toasts would sit on top of the dialog's buttons
+                  setAutoFillOpen(true);
+                }}
+                onBatchCorrect={
+                  batchInfo
+                    ? () => {
+                        toast.dismiss();
+                        setBatchOpen(true);
+                      }
+                    : undefined
+                }
               />
             </section>
           }
@@ -528,7 +561,7 @@ function EditorView({
           state={state}
           referenceDocumentId={selection.documentId}
           columnId={selection.columnId}
-          signature={batchSignature}
+          signature={batchInfo?.signature ?? "missing"}
           onApply={onApplyBatch}
         />
       )}
@@ -567,14 +600,14 @@ function EditorPanels({
       defaultLayout={vertical.defaultLayout}
       onLayoutChanged={vertical.onLayoutChanged}
     >
-      <ResizablePanel id="grid" defaultSize="62%" minSize="25%">
+      <ResizablePanel id="grid" defaultSize="55%" minSize="25%">
         {grid}
       </ResizablePanel>
       <ResizableHandle
         withHandle
         className="h-1.5 w-full cursor-row-resize bg-border hover:bg-primary/30"
       />
-      <ResizablePanel id="bottom" defaultSize="38%" minSize="15%">
+      <ResizablePanel id="bottom" defaultSize="45%" minSize="15%">
         <ResizablePanelGroup
           orientation="horizontal"
           defaultLayout={horizontal.defaultLayout}

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   createInitialState,
+  evaluate,
   undo,
   redo,
   cellKey,
   editCell,
   setVerified,
+  assignToken,
   type EditorState,
 } from "@/editor/engine";
 import {
@@ -13,6 +15,9 @@ import {
   applyAutoFill,
   planBatchCorrection,
   applyBatchCorrection,
+  deriveBatchSignature,
+  isOverridable,
+  protectionOf,
 } from "@/editor/smart";
 import type {
   EditorColumn,
@@ -86,6 +91,19 @@ function initial(raw: RawExtraction): EditorState {
   return createInitialState(raw, COLUMNS);
 }
 
+/** An unprotected (machine-extracted) cell holding a wrong value. */
+function withExtracted(state: EditorState, doc: string, col: string, value: string): EditorState {
+  const k = cellKey(doc, col);
+  const cell = state.cells[k]!;
+  return {
+    ...state,
+    cells: {
+      ...state.cells,
+      [k]: evaluate({ ...cell, value, provenance: "extracted", verified: false }, cell.fieldId),
+    },
+  };
+}
+
 describe("Smart Auto-fill", () => {
   it("proposes each document's OWN value, never the example value", () => {
     const raw = makeRaw();
@@ -110,6 +128,7 @@ describe("Smart Auto-fill", () => {
     let state = initial(raw);
     state = editCell(state, "d2", "c-invoice_number", "0001002").state;
     state = setVerified(state, "d2", "c-invoice_number", true).state;
+    state = withExtracted(state, "d3", "c-invoice_number", "WRONG");
     const plan = planAutoFill(raw, state, "d1", "c-invoice_number", "batch");
     expect(plan.proposals.find((p) => p.documentId === "d2")?.outcome).toBe("protected");
 
@@ -132,8 +151,8 @@ describe("Batch Correction", () => {
     const raw = makeRaw();
     let state = initial(raw);
     // Corrupt d2 and d3 tax ids to an invalid format; they now share the invalid_format signature.
-    state = editCell(state, "d2", "c-seller_tax_id", "BAD").state;
-    state = editCell(state, "d3", "c-seller_tax_id", "ALSOBAD").state;
+    state = withExtracted(state, "d2", "c-seller_tax_id", "BAD");
+    state = withExtracted(state, "d3", "c-seller_tax_id", "ALSOBAD");
     expect(state.cells[cellKey("d2", "c-seller_tax_id")]!.flags).toContain("invalid_format");
 
     const plan = planBatchCorrection(raw, state, "d1", "c-seller_tax_id", "invalid_format", false);
@@ -152,7 +171,7 @@ describe("Batch Correction", () => {
   it("excludes verified cells from batch correction", () => {
     const raw = makeRaw();
     let state = initial(raw);
-    state = editCell(state, "d2", "c-seller_tax_id", "BAD").state;
+    state = withExtracted(state, "d2", "c-seller_tax_id", "BAD");
     // Fix + verify d3 so it is protected from batch correction.
     state = editCell(state, "d3", "c-seller_tax_id", "0300112233").state;
     state = setVerified(state, "d3", "c-seller_tax_id", true).state;
