@@ -28,3 +28,11 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules (InvoiceFlow)
+- The PRD (InvoiceFlow PRD & Engineering Plan v1) is the source of truth; build phase by phase and stop for approval after each.
+- All user-facing copy lives in src/i18n/{vi,en}.json and is read via useI18n().t; why: full bilingual coverage, enforced by src/test/i18n.test.ts.
+- Route head() metadata uses translate("vi", ...) because SSR always renders the default locale.
+- Domain contracts live in src/domain (types, field registry, fixtures); field IDs are stable identity, labels are i18n only.
+- Keep raw extraction, interpreted records and export view as separate layers; never mutate raw tokens.
+- src/domain/fixtures.ts is synthetic dev/test data and must always be labelled as such in the UI.
