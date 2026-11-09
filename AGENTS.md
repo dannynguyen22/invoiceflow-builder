@@ -39,3 +39,8 @@ use the editor.
 - All editor mutations go through pure commands in src/editor/engine.ts that record CorrectionOperations (before/after cells + columns) for undo/redo; why: atomic, testable edits independent of rendering.
 - Column field (EditorColumn.fieldId), per-cell interpretation (Cell.fieldId) and export config (ExportColumn) are distinct; header replacement only changes the column and flags mismatched cells.
 - Drag-and-drop uses typed payloads from src/editor/dnd.ts; every drag gesture has a click/menu alternative. Never put a Radix menu trigger on a native drag source (its pointerdown blocks dragging).
+- Engine commands validate invariants themselves (token ownership, duplicates, verify-only-when-clean), never relying on UI filtering.
+- Cell.verified is set only by the explicit verify command; any value or field change clears it; why: "value selected" ≠ "value checked".
+- Extraction lives in src/extraction (files sniffing, xml, pdf via PDF.js, ocr via Tesseract.js, session store); parsers are dynamic-imported so SSR never loads them.
+- OCR and PDF.js assets are self-hosted under public/ocr and public/pdfjs (copied from node_modules, keep versions matched to the installed packages); why: no invoice-related request may hit a third-party CDN.
+- XML input is refused if it contains DOCTYPE/ENTITY and is matched by localName; why: no entity expansion, namespace-agnostic.
