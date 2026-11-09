@@ -29,16 +29,18 @@ export function pdfItemBBox(viewportTransform: readonly number[], itemTransform:
  * Split a text run into whitespace-separated words. Word boxes are proportional to character
  * counts within the run's real box (pdf.js reports geometry per run, not per glyph).
  */
-export function splitRun(text: string, box: BBox): { text: string; bbox: BBox }[] {
-  const len = text.length;
-  if (!len) return [];
+export function splitRun(text: string, box: BBox, measure?: (s: string) => number): { text: string; bbox: BBox }[] {
+  if (!text.length) return [];
+  // With a measure function, offsets follow rendered glyph widths; otherwise character counts.
+  const w = measure ?? ((s: string) => s.length);
+  const len = w(text) || text.length;
   const out: { text: string; bbox: BBox }[] = [];
   const re = /\S+/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
     out.push({
       text: m[0],
-      bbox: { x: box.x + (box.width * m.index) / len, y: box.y, width: (box.width * m[0].length) / len, height: box.height },
+      bbox: { x: box.x + (box.width * w(text.slice(0, m.index))) / len, y: box.y, width: (box.width * w(m[0])) / len, height: box.height },
     });
   }
   return out;

@@ -44,3 +44,5 @@ use the editor.
 - Extraction lives in src/extraction (files sniffing, xml, pdf via PDF.js, ocr via Tesseract.js, session store); parsers are dynamic-imported so SSR never loads them.
 - OCR and PDF.js assets are self-hosted under public/ocr and public/pdfjs (copied from node_modules, keep versions matched to the installed packages); why: no invoice-related request may hit a third-party CDN.
 - XML input is refused if it contains DOCTYPE/ENTITY and is matched by localName; why: no entity expansion, namespace-agnostic.
+- PDF/OCR field matching is deterministic in src/extraction/matching.ts (lines → label segments → exact/fuzzy labels → seller/buyer section → format-checked values → line-below fallback → shape-only alternatives); why: explainable, testable, no AI; tests replay real pipeline output saved in src/test/samples/real-extraction.json.
+- Editor panel sizes persist via react-resizable-panels useDefaultLayout (localStorage) and panels render only after hydration; why: avoids SSR layout mismatch.

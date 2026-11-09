@@ -56,6 +56,11 @@ export async function extractPdf(
     throw new ExtractionError("pdf_invalid");
   }
 
+  // Glyph-width measurement for splitting runs into words (generic font; ratios only).
+  const mctx = document.createElement("canvas").getContext("2d");
+  if (mctx) mctx.font = "10px sans-serif";
+  const measure = mctx ? (s: string) => mctx.measureText(s).width : undefined;
+
   const out: PdfExtraction = { pageSizes: [], tokens: [], pageImages: [], ocrPages: [] };
   const total = pdf.numPages;
   try {
@@ -72,7 +77,7 @@ export async function extractPdf(
         if (!("str" in item) || !item.str.trim()) continue;
         chars += item.str.replace(/\s/g, "").length;
         const box = pdfItemBBox(viewport.transform, item.transform, item.width);
-        for (const w of splitRun(item.str, box))
+        for (const w of splitRun(item.str, box, measure))
           pageTokens.push({ id: `${documentId}-p${p}-${++n}`, documentId, page: p, text: w.text, bbox: w.bbox, confidence: 1 });
       }
 
