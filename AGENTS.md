@@ -36,3 +36,6 @@ use the editor.
 - Domain contracts live in src/domain (types, field registry, fixtures); field IDs are stable identity, labels are i18n only.
 - Keep raw extraction, interpreted records and export view as separate layers; never mutate raw tokens.
 - src/domain/fixtures.ts is synthetic dev/test data and must always be labelled as such in the UI.
+- All editor mutations go through pure commands in src/editor/engine.ts that record CorrectionOperations (before/after cells + columns) for undo/redo; why: atomic, testable edits independent of rendering.
+- Column field (EditorColumn.fieldId), per-cell interpretation (Cell.fieldId) and export config (ExportColumn) are distinct; header replacement only changes the column and flags mismatched cells.
+- Drag-and-drop uses typed payloads from src/editor/dnd.ts; every drag gesture has a click/menu alternative. Never put a Radix menu trigger on a native drag source (its pointerdown blocks dragging).
