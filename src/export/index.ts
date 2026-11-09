@@ -2,7 +2,13 @@
 import type { EditorColumn, RawExtraction } from "@/domain/types";
 import type { EditorState } from "@/editor/engine";
 import type { Locale } from "@/i18n";
-import { buildExportColumns, buildExportRows, filterRows, toMatrix, type ExportScope } from "./model";
+import {
+  buildExportColumns,
+  buildExportRows,
+  filterRows,
+  toMatrix,
+  type ExportScope,
+} from "./model";
 import { toCsv } from "./csv";
 import { toXlsx } from "./xlsx";
 import { downloadBlob, exportFilename } from "./download";
@@ -36,7 +42,12 @@ export interface ExportResult {
 }
 
 /** Build the matrix + serialized bytes without downloading (used by tests and preview). */
-export function serializeExport(req: ExportRequest): { filename: string; data: string | Uint8Array; mime: string; rowCount: number } {
+export function serializeExport(req: ExportRequest): {
+  filename: string;
+  data: string | Uint8Array;
+  mime: string;
+  rowCount: number;
+} {
   const columns = buildExportColumns(req.columns, req.locale, req.headerOverrides);
   const rows = filterRows(buildExportRows(req.raw, req.state, req.columns), req.scope);
   const { header, body } = toMatrix(rows, columns, req.locale);
@@ -49,8 +60,16 @@ export function serializeExport(req: ExportRequest): { filename: string; data: s
       rowCount: rows.length,
     };
   }
-  const data = toCsv(header, body, { delimiter: req.format.delimiter, utf8Bom: req.format.utf8Bom });
-  return { filename: exportFilename(req.filenameStem, "csv"), data, mime: "text/csv;charset=utf-8", rowCount: rows.length };
+  const data = toCsv(header, body, {
+    delimiter: req.format.delimiter,
+    utf8Bom: req.format.utf8Bom,
+  });
+  return {
+    filename: exportFilename(req.filenameStem, "csv"),
+    data,
+    mime: "text/csv;charset=utf-8",
+    rowCount: rows.length,
+  };
 }
 
 /** Serialize and trigger a browser download. */

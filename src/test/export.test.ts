@@ -9,7 +9,8 @@ import { FIXTURE_RAW, DEFAULT_COLUMNS } from "@/domain/fixtures";
 import type { FieldId } from "@/domain/types";
 
 const H = ["Số hóa đơn", "MST"];
-const body = (rows: [FieldId, string][][]) => rows.map((r) => r.map(([fieldId, value]) => ({ fieldId, value })));
+const body = (rows: [FieldId, string][][]) =>
+  rows.map((r) => r.map(([fieldId, value]) => ({ fieldId, value })));
 
 describe("CSV export", () => {
   it("neutralizes formula injection", () => {
@@ -19,20 +20,69 @@ describe("CSV export", () => {
     expect(sanitizeForFormula("0101234567")).toBe("0101234567");
   });
   it("preserves leading zeros and quotes fields with the delimiter", () => {
-    const csv = toCsv(H, body([[["invoice_number", "0001234"], ["seller_tax_id", "0101234567"]]]), { delimiter: ",", utf8Bom: false });
+    const csv = toCsv(
+      H,
+      body([
+        [
+          ["invoice_number", "0001234"],
+          ["seller_tax_id", "0101234567"],
+        ],
+      ]),
+      { delimiter: ",", utf8Bom: false },
+    );
     expect(csv).toContain("0001234");
     expect(csv).toContain("0101234567");
-    const withComma = toCsv(H, body([[["seller_name", "Công ty, TNHH"], ["seller_tax_id", "1"]]]), { delimiter: ",", utf8Bom: false });
+    const withComma = toCsv(
+      H,
+      body([
+        [
+          ["seller_name", "Công ty, TNHH"],
+          ["seller_tax_id", "1"],
+        ],
+      ]),
+      { delimiter: ",", utf8Bom: false },
+    );
     expect(withComma).toContain('"Công ty, TNHH"');
   });
   it("adds a UTF-8 BOM when requested and uses CRLF", () => {
-    const csv = toCsv(H, body([[["invoice_number", "1"], ["seller_tax_id", "2"]]]), { delimiter: ",", utf8Bom: true });
+    const csv = toCsv(
+      H,
+      body([
+        [
+          ["invoice_number", "1"],
+          ["seller_tax_id", "2"],
+        ],
+      ]),
+      { delimiter: ",", utf8Bom: true },
+    );
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     expect(csv).toContain("\r\n");
   });
   it("supports semicolon and tab delimiters", () => {
-    expect(toCsv(H, body([[["invoice_number", "a"], ["seller_tax_id", "b"]]]), { delimiter: ";", utf8Bom: false })).toContain("a;b");
-    expect(toCsv(H, body([[["invoice_number", "a"], ["seller_tax_id", "b"]]]), { delimiter: "\t", utf8Bom: false })).toContain("a\tb");
+    expect(
+      toCsv(
+        H,
+        body([
+          [
+            ["invoice_number", "a"],
+            ["seller_tax_id", "b"],
+          ],
+        ]),
+        { delimiter: ";", utf8Bom: false },
+      ),
+    ).toContain("a;b");
+    expect(
+      toCsv(
+        H,
+        body([
+          [
+            ["invoice_number", "a"],
+            ["seller_tax_id", "b"],
+          ],
+        ]),
+        { delimiter: "\t", utf8Bom: false },
+      ),
+    ).toContain("a\tb");
   });
 });
 
@@ -49,7 +99,15 @@ describe("ZIP / XLSX writer", () => {
     expect(view.getUint32(zip.length - 22, true)).toBe(0x06054b50);
   });
   it("writes a valid XLSX package containing the data as inline strings", () => {
-    const xlsx = toXlsx(H, body([[["invoice_number", "0001234"], ["seller_tax_id", "0101234567"]]]));
+    const xlsx = toXlsx(
+      H,
+      body([
+        [
+          ["invoice_number", "0001234"],
+          ["seller_tax_id", "0101234567"],
+        ],
+      ]),
+    );
     expect(xlsx[0]).toBe(0x50); // 'P'
     expect(xlsx[1]).toBe(0x4b); // 'K'
     const text = new TextDecoder().decode(xlsx);
@@ -63,17 +121,45 @@ describe("ZIP / XLSX writer", () => {
 describe("serializeExport scopes", () => {
   const state = createInitialState(FIXTURE_RAW, DEFAULT_COLUMNS);
   it("all scope exports every document row", () => {
-    const r = serializeExport({ raw: FIXTURE_RAW, state, columns: DEFAULT_COLUMNS, locale: "vi", scope: "all", format: { type: "csv", delimiter: ",", utf8Bom: false } });
+    const r = serializeExport({
+      raw: FIXTURE_RAW,
+      state,
+      columns: DEFAULT_COLUMNS,
+      locale: "vi",
+      scope: "all",
+      format: { type: "csv", delimiter: ",", utf8Bom: false },
+    });
     expect(r.rowCount).toBe(FIXTURE_RAW.documents.length);
     expect(r.filename).toMatch(/\.csv$/);
   });
   it("validated scope excludes rows with needs_review cells", () => {
-    const all = serializeExport({ raw: FIXTURE_RAW, state, columns: DEFAULT_COLUMNS, locale: "vi", scope: "all", format: { type: "csv", delimiter: ",", utf8Bom: false } });
-    const validated = serializeExport({ raw: FIXTURE_RAW, state, columns: DEFAULT_COLUMNS, locale: "vi", scope: "validated", format: { type: "csv", delimiter: ",", utf8Bom: false } });
+    const all = serializeExport({
+      raw: FIXTURE_RAW,
+      state,
+      columns: DEFAULT_COLUMNS,
+      locale: "vi",
+      scope: "all",
+      format: { type: "csv", delimiter: ",", utf8Bom: false },
+    });
+    const validated = serializeExport({
+      raw: FIXTURE_RAW,
+      state,
+      columns: DEFAULT_COLUMNS,
+      locale: "vi",
+      scope: "validated",
+      format: { type: "csv", delimiter: ",", utf8Bom: false },
+    });
     expect(validated.rowCount).toBeLessThanOrEqual(all.rowCount);
   });
   it("xlsx scope yields a .xlsx filename and bytes", () => {
-    const r = serializeExport({ raw: FIXTURE_RAW, state, columns: DEFAULT_COLUMNS, locale: "vi", scope: "all", format: { type: "xlsx", delimiter: ",", utf8Bom: false } });
+    const r = serializeExport({
+      raw: FIXTURE_RAW,
+      state,
+      columns: DEFAULT_COLUMNS,
+      locale: "vi",
+      scope: "all",
+      format: { type: "xlsx", delimiter: ",", utf8Bom: false },
+    });
     expect(r.filename).toMatch(/\.xlsx$/);
     expect(r.data).toBeInstanceOf(Uint8Array);
   });

@@ -20,6 +20,14 @@ export function useEditor(raw: RawExtraction, columns: EditorColumn[]) {
     return r;
   }, []);
 
+  /** Apply a raw state transition (e.g. smart auto-fill / batch correction that push their own op). */
+  const apply = useCallback((fn: (s: EditorState) => EditorState): EditorState => {
+    const next = fn(ref.current);
+    ref.current = next;
+    setState(next);
+    return next;
+  }, []);
+
   const doUndo = useCallback(() => {
     const had = ref.current.past.length > 0;
     const s = undo(ref.current);
@@ -35,5 +43,5 @@ export function useEditor(raw: RawExtraction, columns: EditorColumn[]) {
     return had;
   }, []);
 
-  return { state, run, undo: doUndo, redo: doRedo };
+  return { state, run, apply, undo: doUndo, redo: doRedo };
 }

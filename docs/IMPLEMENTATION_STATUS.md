@@ -21,9 +21,9 @@ code and/or running tests/build — not by self-report.
 | 0 — Foundation | routes, i18n vi/en, design system, field registry, fixtures, tests | ✅ Complete |
 | 1 — Interactive editor | grid, fields panel, add/replace/reorder, candidate picker, manual edit, preview, undo | ✅ Complete |
 | 2 — Real extraction | XML parser, PDF.js text, OCR worker, bbox overlays, raw store, per-file status | ✅ Complete |
-| 3 — Matching/review | exact/fuzzy aliases, ranking, validation, exception-first filters, source linking | 🟡 Partial — matching & source linking done; **Needs-Review filter** and **VAT-arithmetic validation** missing |
-| 4 — Smart operations | Smart Auto-fill, scope matching, Batch Correction, preview, atomic undo | ❌ Missing (type scaffolding only) |
-| 5 — Account/export | Google sign-in, RLS templates, CSV/XLSX, UTF-8 BOM, identifiers as strings | 🟡 CSV/XLSX export missing; auth is optional and intentionally guest-only for MVP |
+| 3 — Matching/review | exact/fuzzy aliases, ranking, validation, exception-first filters, source linking | ✅ Complete — matching, source linking, **Needs-Review filter**, **VAT/duplicate checks** done |
+| 4 — Smart operations | Smart Auto-fill, scope matching, Batch Correction, preview, atomic undo | ✅ Complete — engine + preview dialogs, per-row own values, protection, atomic undo |
+| 5 — Account/export | Google sign-in, RLS templates, CSV/XLSX, UTF-8 BOM, identifiers as strings | 🟡 CSV/XLSX export done; auth/templates intentionally deferred (guest-only MVP, see note) |
 | 6 — QA/beta | security/network audit, perf, i18n coverage, a11y, acceptance matrix | 🟡 In progress |
 
 ## Detailed findings (initial audit)
@@ -62,3 +62,10 @@ code and/or running tests/build — not by self-report.
   cross-field **VAT-arithmetic / duplicate-invoice checks** (`src/domain/invoice-checks.ts`). 12 new export
   tests (incl. CRC-32 verified against the standard value, real XLSX opened with system unzip). 116 tests pass,
   build + typecheck clean.
+- 2026-11-09: Implemented Phase 4 **Smart Auto-fill** and **Batch Correction** (`src/editor/smart.ts`):
+  learn-from-example, per-row OWN-value matching (never copies the example value), scopes
+  (same supplier / similar layout / entire batch), preview dialogs with matched/review/not-found counts
+  and before/after per row, confirmed/manual cells protected, single atomic `auto_fill` / `batch_correction`
+  op (one undo). Added **Needs-Review filter** toolbar toggle + count (exception-first review, Phase 3).
+  5 new smart-ops tests (own-value, scope, protection, atomic undo). Changed files lint-clean & formatted.
+  121 tests pass, build + typecheck clean.

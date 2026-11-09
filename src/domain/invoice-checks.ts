@@ -44,8 +44,17 @@ export function documentIssues(state: EditorState, documentId: string): InvoiceI
   const vat = amount(cellValue(state, documentId, "vat_amount"));
   const total = amount(cellValue(state, documentId, "total_amount"));
   if (sub !== null && vat !== null && total !== null && !vatArithmeticOk(sub, vat, total)) {
-    issues.push({ code: "vat_mismatch", documentId, fields: ["subtotal", "vat_amount", "total_amount"] });
-  } else if (sub !== null && total !== null && vat === null && Math.abs(sub - total) > Math.max(1, Math.abs(total) * 0.005)) {
+    issues.push({
+      code: "vat_mismatch",
+      documentId,
+      fields: ["subtotal", "vat_amount", "total_amount"],
+    });
+  } else if (
+    sub !== null &&
+    total !== null &&
+    vat === null &&
+    Math.abs(sub - total) > Math.max(1, Math.abs(total) * 0.005)
+  ) {
     // Subtotal and total present but differ and there is no VAT to explain the gap.
     issues.push({ code: "total_not_sum", documentId, fields: ["subtotal", "total_amount"] });
   }
@@ -61,7 +70,8 @@ export function duplicateInvoiceIssues(raw: RawExtraction, state: EditorState): 
     const seller = cellValue(state, d.id, "seller_tax_id")?.trim() ?? "";
     if (!num) continue;
     const key = `${seller}|${num}`;
-    if (seen.has(key)) dupes.push({ code: "duplicate_invoice", documentId: d.id, fields: ["invoice_number"] });
+    if (seen.has(key))
+      dupes.push({ code: "duplicate_invoice", documentId: d.id, fields: ["invoice_number"] });
     else seen.set(key, d.id);
   }
   return dupes;
@@ -77,7 +87,8 @@ export function allIssues(raw: RawExtraction, state: EditorState): InvoiceIssue[
 
 export function issuesByDocument(issues: InvoiceIssue[]): Map<string, InvoiceIssue[]> {
   const m = new Map<string, InvoiceIssue[]>();
-  for (const i of issues) (m.get(i.documentId) ?? m.set(i.documentId, []).get(i.documentId)!).push(i);
+  for (const i of issues)
+    (m.get(i.documentId) ?? m.set(i.documentId, []).get(i.documentId)!).push(i);
   return m;
 }
 

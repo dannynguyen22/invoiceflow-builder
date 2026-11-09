@@ -20,7 +20,11 @@ export function sanitizeForFormula(value: string): string {
 
 /** Escape one CSV field per RFC 4180: wrap in quotes if it contains delimiter, quote, or newline. */
 function escapeField(value: string, delimiter: string): string {
-  const needsQuote = value.includes(delimiter) || value.includes('"') || value.includes("\n") || value.includes("\r");
+  const needsQuote =
+    value.includes(delimiter) ||
+    value.includes('"') ||
+    value.includes("\n") ||
+    value.includes("\r");
   const escaped = value.replace(/"/g, '""');
   return needsQuote ? `"${escaped}"` : escaped;
 }
@@ -41,7 +45,8 @@ export function toCsv(
   const d = opts.delimiter;
   const lines: string[] = [];
   lines.push(header.map((h) => escapeField(sanitizeForFormula(h), d)).join(d));
-  for (const row of body) lines.push(row.map((c) => escapeField(cellText(c.fieldId, c.value), d)).join(d));
+  for (const row of body)
+    lines.push(row.map((c) => escapeField(cellText(c.fieldId, c.value), d)).join(d));
   // CRLF line endings: most compatible with Excel.
   const text = lines.join("\r\n");
   return opts.utf8Bom ? `\uFEFF${text}` : text;

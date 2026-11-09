@@ -38,7 +38,10 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
   const rows = useMemo(() => buildExportRows(raw, state, columns), [raw, state, columns]);
   const validCount = rows.filter((r) => r.valid).length;
   const total = rows.length;
-  const issueCount = useMemo(() => new Set(allIssues(raw, state).map((i) => i.documentId)).size, [raw, state]);
+  const issueCount = useMemo(
+    () => new Set(allIssues(raw, state).map((i) => i.documentId)).size,
+    [raw, state],
+  );
   const hasNeedsReview = validCount < total;
 
   const doExport = () => {
@@ -61,7 +64,13 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="default" className="h-7 px-2" disabled={disabled} title={t("export.open")}>
+        <Button
+          size="sm"
+          variant="default"
+          className="h-7 px-2"
+          disabled={disabled}
+          title={t("export.open")}
+        >
           <Download aria-hidden /> <span className="hidden sm:inline">{t("export.open")}</span>
         </Button>
       </DialogTrigger>
@@ -76,7 +85,11 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
             {t("export.summaryValid", { valid: validCount, total })}
             {issueCount > 0 && ` ${t("export.summaryIssues", { count: issueCount })}`}
           </p>
-          {hasNeedsReview && <p className="rounded bg-review/15 px-2 py-1.5 text-xs text-review-foreground">{t("export.warnNeedsReview")}</p>}
+          {hasNeedsReview && (
+            <p className="rounded bg-review/15 px-2 py-1.5 text-xs text-review-foreground">
+              {t("export.warnNeedsReview")}
+            </p>
+          )}
 
           <fieldset>
             <legend className="mb-1.5 font-medium">{t("export.scopeTitle")}</legend>
@@ -85,14 +98,19 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
                 <RadioGroupItem value="all" /> {t("export.scopeAll", { count: total })}
               </label>
               <label className="flex items-center gap-2">
-                <RadioGroupItem value="validated" /> {t("export.scopeValidated", { count: validCount })}
+                <RadioGroupItem value="validated" />{" "}
+                {t("export.scopeValidated", { count: validCount })}
               </label>
             </RadioGroup>
           </fieldset>
 
           <fieldset>
             <legend className="mb-1.5 font-medium">{t("export.formatTitle")}</legend>
-            <RadioGroup value={format} onValueChange={(v) => setFormat(v as "csv" | "xlsx")} className="grid-flow-col justify-start gap-4">
+            <RadioGroup
+              value={format}
+              onValueChange={(v) => setFormat(v as "csv" | "xlsx")}
+              className="grid-flow-col justify-start gap-4"
+            >
               <label className="flex items-center gap-2">
                 <RadioGroupItem value="xlsx" /> {t("export.formatXlsx")}
               </label>
@@ -106,7 +124,11 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
             <div className="space-y-3">
               <fieldset>
                 <legend className="mb-1.5 font-medium">{t("export.delimiterTitle")}</legend>
-                <RadioGroup value={delimiter} onValueChange={(v) => setDelimiter(v as "," | ";" | "\t")} className="grid-flow-col justify-start gap-4">
+                <RadioGroup
+                  value={delimiter}
+                  onValueChange={(v) => setDelimiter(v as "," | ";" | "\t")}
+                  className="grid-flow-col justify-start gap-4"
+                >
                   <label className="flex items-center gap-2">
                     <RadioGroupItem value="," /> {t("export.delimiterComma")}
                   </label>

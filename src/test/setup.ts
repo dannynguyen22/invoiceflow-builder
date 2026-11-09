@@ -42,4 +42,5 @@ class RO {
   unobserve() {}
   disconnect() {}
 }
-if (!("ResizeObserver" in window)) Object.defineProperty(window, "ResizeObserver", { writable: true, value: RO });
+if (!("ResizeObserver" in window))
+  Object.defineProperty(window, "ResizeObserver", { writable: true, value: RO });

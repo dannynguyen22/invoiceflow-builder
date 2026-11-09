@@ -12,14 +12,17 @@ const utf8 = new TextEncoder();
 const enc = (s: string): ZipEntry["data"] => utf8.encode(s);
 
 function xmlEscape(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;")
-    // Strip control chars that are illegal in XML 1.0 (keep tab/newline/cr).
-    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
+  return (
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;")
+      // Strip control chars that are illegal in XML 1.0 (keep tab/newline/cr).
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "")
+  );
 }
 
 function colLetter(index0: number): string {
@@ -43,7 +46,9 @@ function sheetXml(header: string[], body: { fieldId: FieldId; value: string }[][
   rows.push(`<row r="1">${header.map((h, i) => cellXml(i, 1, h)).join("")}</row>`);
   body.forEach((row, r) => {
     const rowNum = r + 2;
-    rows.push(`<row r="${rowNum}">${row.map((c, i) => cellXml(i, rowNum, c.value)).join("")}</row>`);
+    rows.push(
+      `<row r="${rowNum}">${row.map((c, i) => cellXml(i, rowNum, c.value)).join("")}</row>`,
+    );
   });
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.join("")}</sheetData></worksheet>`;

@@ -2,7 +2,14 @@
 // Export never mutates layers A/B. Identifiers (tax IDs, invoice numbers, series) stay strings
 // so leading zeros survive (PRD §05, §14). Values come straight from the cells the user reviewed.
 import { getField } from "@/domain/fields";
-import type { Cell, EditorColumn, ExportColumn, FieldId, RawExtraction, ReviewState } from "@/domain/types";
+import type {
+  Cell,
+  EditorColumn,
+  ExportColumn,
+  FieldId,
+  RawExtraction,
+  ReviewState,
+} from "@/domain/types";
 import { cellKey, type EditorState } from "@/editor/engine";
 import { translate, type Locale } from "@/i18n";
 
@@ -22,7 +29,11 @@ export function defaultHeader(fieldId: FieldId, locale: Locale): string {
  * field label, but a saved template's custom headers take precedence and are NOT rewritten on a
  * language switch (PRD §09, §14). The `review_status` column is synthesised from each cell's state.
  */
-export function buildExportColumns(columns: EditorColumn[], locale: Locale, headerOverrides?: Record<string, string>): ExportColumn[] {
+export function buildExportColumns(
+  columns: EditorColumn[],
+  locale: Locale,
+  headerOverrides?: Record<string, string>,
+): ExportColumn[] {
   return columns.map((c, i) => ({
     id: c.id,
     fieldId: c.fieldId,
@@ -41,7 +52,11 @@ export interface ExportRow {
 }
 
 /** Row-level review summary: a row is "valid" only when none of its cells need review. */
-export function buildExportRows(raw: RawExtraction, state: EditorState, columns: EditorColumn[]): ExportRow[] {
+export function buildExportRows(
+  raw: RawExtraction,
+  state: EditorState,
+  columns: EditorColumn[],
+): ExportRow[] {
   return raw.documents.map((d) => {
     const cells = columns.map((c) => state.cells[cellKey(d.id, c.id)]!).filter(Boolean);
     const valid = cells.every((c) => c.reviewState !== "needs_review");
@@ -74,7 +89,8 @@ export function toMatrix(
   const body = rows.map((row) => {
     const byColumn = new Map(row.cells.map((c) => [c.columnId, c]));
     return columns.map((col) => {
-      if (col.fieldId === "review_status") return { fieldId: col.fieldId, value: rowReviewStatus(row.cells, locale) };
+      if (col.fieldId === "review_status")
+        return { fieldId: col.fieldId, value: rowReviewStatus(row.cells, locale) };
       const cell = byColumn.get(col.id);
       return { fieldId: col.fieldId, value: cell?.value ?? "" };
     });

@@ -33,6 +33,8 @@ interface Props {
   onDropToken: (documentId: string, columnId: string, tokenId: string) => void;
   /** Open the candidate picker for the selected cell (single click, Space, Alt+↓). */
   onOpenPicker?: (anchor: HTMLElement) => void;
+  /** When true, only rows that contain at least one needs_review cell are shown. */
+  reviewOnly?: boolean;
 }
 
 /** Delay before a single click opens the picker, so a double click can cancel it. */
@@ -41,6 +43,10 @@ export const PICKER_CLICK_DELAY = 220;
 export function DataGrid(p: Props) {
   const { t, formatNumber } = useI18n();
   const { columns, cells } = p.state;
+  // Exception-first review: optionally show only rows with a cell that needs review (PRD §02 Review).
+  const rowNeedsReview = (docId: string) =>
+    columns.some((c) => cells[cellKey(docId, c.id)]?.reviewState === "needs_review");
+  const documents = p.reviewOnly ? p.documents.filter((d) => rowNeedsReview(d.id)) : p.documents;
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,7 +62,8 @@ export function DataGrid(p: Props) {
     const el = tableRef.current?.querySelector<HTMLElement>(
       `[data-cell="${cellKey(p.selection.documentId, p.selection.columnId)}"]`,
     );
-    if (el && document.activeElement !== el && tableRef.current?.contains(document.activeElement)) el.focus();
+    if (el && document.activeElement !== el && tableRef.current?.contains(document.activeElement))
+      el.focus();
   }, [p.selection, p.editing]);
 
   const move = (dRow: number, dCol: number) => {
@@ -72,17 +79,30 @@ export function DataGrid(p: Props) {
     const nc = Math.max(0, Math.min(columns.length - 1, c + dCol));
     p.onSelect({ documentId: p.documents[nr]!.id, columnId: columns[nc]!.id });
     requestAnimationFrame(() => {
-      tableRef.current?.querySelector<HTMLElement>(`[data-cell="${cellKey(p.documents[nr]!.id, columns[nc]!.id)}"]`)?.focus();
+      tableRef.current
+        ?.querySelector<HTMLElement>(
+          `[data-cell="${cellKey(p.documents[nr]!.id, columns[nc]!.id)}"]`,
+        )
+        ?.focus();
     });
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (p.editing) return;
-    const map: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+    const map: Record<string, [number, number]> = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    };
     if (map[e.key] && !e.altKey) {
       e.preventDefault();
       move(...map[e.key]!);
-    } else if ((e.key === " " || (e.key === "ArrowDown" && e.altKey)) && p.selection && p.onOpenPicker) {
+    } else if (
+      (e.key === " " || (e.key === "ArrowDown" && e.altKey)) &&
+      p.selection &&
+      p.onOpenPicker
+    ) {
       e.preventDefault();
       const el = e.target as HTMLElement;
       if (el.dataset["cell"]) p.onOpenPicker(el);
@@ -96,16 +116,27 @@ export function DataGrid(p: Props) {
   };
 
   const display = (cell: Cell, fieldId: FieldId) => {
-    if (!cell.value) return <span className="text-muted-foreground/70">{t("editor.emptyCell")}</span>;
-    if (getField(fieldId).valueType === "amount" && /^\d+$/.test(cell.value)) return formatNumber(Number(cell.value));
+    if (!cell.value)
+      return <span className="text-muted-foreground/70">{t("editor.emptyCell")}</span>;
+    if (getField(fieldId).valueType === "amount" && /^\d+$/.test(cell.value))
+      return formatNumber(Number(cell.value));
     return cell.value;
   };
 
   return (
-    <table ref={tableRef} role="grid" aria-label={t("editor.gridRegion")} onKeyDown={onKeyDown} className="w-max min-w-full border-separate border-spacing-0 text-[13px]">
+    <table
+      ref={tableRef}
+      role="grid"
+      aria-label={t("editor.gridRegion")}
+      onKeyDown={onKeyDown}
+      className="w-max min-w-full border-separate border-spacing-0 text-[13px]"
+    >
       <thead className="sticky top-0 z-10 bg-secondary">
         <tr>
-          <th scope="col" className="sticky left-0 z-20 h-8 w-10 border-b border-r border-grid-line bg-secondary px-2 text-left text-xs font-medium text-muted-foreground">
+          <th
+            scope="col"
+            className="sticky left-0 z-20 h-8 w-10 border-b border-r border-grid-line bg-secondary px-2 text-left text-xs font-medium text-muted-foreground"
+          >
             #
           </th>
           {columns.map((col, i) => {
@@ -145,7 +176,10 @@ export function DataGrid(p: Props) {
                 <div className="flex h-full items-center">
                   <span className="flex-1 truncate px-3">{label}</span>
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="mr-1 rounded p-1 hover:bg-background" aria-label={t("editor.columnMenu", { field: label })}>
+                    <DropdownMenuTrigger
+                      className="mr-1 rounded p-1 hover:bg-background"
+                      aria-label={t("editor.columnMenu", { field: label })}
+                    >
                       <ChevronDown className="size-3.5" aria-hidden />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -153,17 +187,27 @@ export function DataGrid(p: Props) {
                         <DropdownMenuSubTrigger>{t("editor.changeField")}</DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="max-h-80 overflow-auto">
                           {FIELD_REGISTRY.map((f) => (
-                            <DropdownMenuItem key={f.id} disabled={f.id === col.fieldId} onSelect={() => p.onReplaceField(col.id, f.id)}>
+                            <DropdownMenuItem
+                              key={f.id}
+                              disabled={f.id === col.fieldId}
+                              onSelect={() => p.onReplaceField(col.id, f.id)}
+                            >
                               {t(f.labelKey)}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuSubContent>
                       </DropdownMenuSub>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem disabled={i === 0} onSelect={() => p.onMoveColumn(col.id, i - 1)}>
+                      <DropdownMenuItem
+                        disabled={i === 0}
+                        onSelect={() => p.onMoveColumn(col.id, i - 1)}
+                      >
                         {t("editor.moveLeft")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem disabled={i === columns.length - 1} onSelect={() => p.onMoveColumn(col.id, i + 1)}>
+                      <DropdownMenuItem
+                        disabled={i === columns.length - 1}
+                        onSelect={() => p.onMoveColumn(col.id, i + 1)}
+                      >
                         {t("editor.moveRight")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -187,7 +231,10 @@ export function DataGrid(p: Props) {
               const field = e.dataTransfer.getData(DND.field) as FieldId;
               if (field) p.onAddColumn(field);
             }}
-            className={cn("h-8 min-w-44 border-b border-grid-line px-1 text-left text-xs font-medium", dropTarget === "add" && "bg-accent")}
+            className={cn(
+              "h-8 min-w-44 border-b border-grid-line px-1 text-left text-xs font-medium",
+              dropTarget === "add" && "bg-accent",
+            )}
           >
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -208,18 +255,35 @@ export function DataGrid(p: Props) {
         </tr>
       </thead>
       <tbody>
-        {p.documents.map((doc, r) => (
+        {documents.length === 0 && (
+          <tr>
+            <td
+              colSpan={columns.length + 2}
+              className="h-10 px-3 text-center text-xs text-muted-foreground"
+            >
+              {t("review.noMatches")}
+            </td>
+          </tr>
+        )}
+        {documents.map((doc, r) => (
           <tr key={doc.id} className="group">
-            <th scope="row" className="sticky left-0 z-[1] h-8 border-b border-r border-grid-line bg-paper px-2 text-left text-xs font-normal text-muted-foreground tabular">
+            <th
+              scope="row"
+              className="sticky left-0 z-[1] h-8 border-b border-r border-grid-line bg-paper px-2 text-left text-xs font-normal text-muted-foreground tabular"
+            >
               {r + 1}
             </th>
             {columns.map((col) => {
               const k = cellKey(doc.id, col.id);
               const cell = cells[k];
               if (!cell) return <td key={col.id} className="border-b border-r border-grid-line" />;
-              const selected = p.selection?.documentId === doc.id && p.selection.columnId === col.id;
+              const selected =
+                p.selection?.documentId === doc.id && p.selection.columnId === col.id;
               const dz = dropTarget === `c:${k}`;
-              const crossDoc = dz && dragSession.tokenDocumentId !== null && dragSession.tokenDocumentId !== doc.id;
+              const crossDoc =
+                dz &&
+                dragSession.tokenDocumentId !== null &&
+                dragSession.tokenDocumentId !== doc.id;
               return (
                 <td
                   key={col.id}
@@ -228,7 +292,10 @@ export function DataGrid(p: Props) {
                   data-review={cell.reviewState}
                   aria-selected={selected}
                   tabIndex={selected || (!p.selection && r === 0 && col === columns[0]) ? 0 : -1}
-                  title={cell.flags.map((f) => t(`flags.${f}`)).join(" · ") || t(`review.${cell.reviewState}`)}
+                  title={
+                    cell.flags.map((f) => t(`flags.${f}`)).join(" · ") ||
+                    t(`review.${cell.reviewState}`)
+                  }
                   onClick={(e) => {
                     p.onSelect({ documentId: doc.id, columnId: col.id });
                     cancelClick();
@@ -244,7 +311,8 @@ export function DataGrid(p: Props) {
                   onDragOver={(e) => {
                     if (!hasType(e, DND.token)) return;
                     e.preventDefault();
-                    e.dataTransfer.dropEffect = dragSession.tokenDocumentId === doc.id ? "copy" : "none";
+                    e.dataTransfer.dropEffect =
+                      dragSession.tokenDocumentId === doc.id ? "copy" : "none";
                     setDropTarget(`c:${k}`);
                   }}
                   onDragLeave={() => setDropTarget((d) => (d === `c:${k}` ? null : d))}
@@ -256,7 +324,8 @@ export function DataGrid(p: Props) {
                   }}
                   className={cn(
                     "tabular relative h-8 max-w-72 truncate whitespace-nowrap border-b border-r border-grid-line px-3 outline-none group-hover:bg-secondary/50",
-                    cell.reviewState === "needs_review" && "bg-review/15 shadow-[inset_2px_0_0_var(--review)]",
+                    cell.reviewState === "needs_review" &&
+                      "bg-review/15 shadow-[inset_2px_0_0_var(--review)]",
                     cell.reviewState === "confirmed" && "shadow-[inset_2px_0_0_var(--confirmed)]",
                     selected && "bg-accent/40 ring-2 ring-inset ring-selected",
                     dz && !crossDoc && "bg-accent ring-2 ring-inset ring-primary",
@@ -284,7 +353,17 @@ export function DataGrid(p: Props) {
   );
 }
 
-function CellEditor({ initial, label, onCommit, onCancel }: { initial: string; label: string; onCommit: (v: string) => void; onCancel: () => void }) {
+function CellEditor({
+  initial,
+  label,
+  onCommit,
+  onCancel,
+}: {
+  initial: string;
+  label: string;
+  onCommit: (v: string) => void;
+  onCancel: () => void;
+}) {
   const [v, setV] = useState(initial);
   const done = useRef(false);
   return (

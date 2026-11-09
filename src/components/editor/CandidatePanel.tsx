@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2, Pencil } from "lucide-react";
+import { CheckCircle2, ListChecks, Pencil, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Cell, FieldCandidate, FieldId, OCRToken } from "@/domain/types";
@@ -16,16 +16,35 @@ interface Props {
   onChooseToken: (tokenId: string) => void;
   onEdit: () => void;
   onToggleVerified: (verified: boolean) => void;
+  /** Open Smart Auto-fill using the selected cell as the example. */
+  onAutoFill?: () => void;
+  /** Open Batch Correction for the selected cell's error signature. */
+  onBatchCorrect?: () => void;
   searchRef?: React.Ref<HTMLInputElement>;
 }
 
 const TOP_N = 5;
 
-export function CandidatePanel({ cell, columnField, candidates, tokens, onChooseCandidate, onChooseToken, onEdit, onToggleVerified, searchRef }: Props) {
+export function CandidatePanel({
+  cell,
+  columnField,
+  candidates,
+  tokens,
+  onChooseCandidate,
+  onChooseToken,
+  onEdit,
+  onToggleVerified,
+  onAutoFill,
+  onBatchCorrect,
+  searchRef,
+}: Props) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const q = normalizeForSearch(query);
-  const filtered = useMemo(() => tokens.filter((tk) => !q || normalizeForSearch(tk.text).includes(q)), [tokens, q]);
+  const filtered = useMemo(
+    () => tokens.filter((tk) => !q || normalizeForSearch(tk.text).includes(q)),
+    [tokens, q],
+  );
 
   if (!cell || !columnField)
     return <p className="p-4 text-sm text-muted-foreground">{t("editor.selectCellHint")}</p>;
@@ -34,20 +53,33 @@ export function CandidatePanel({ cell, columnField, candidates, tokens, onChoose
     <div className="flex h-full min-h-0 flex-col">
       <div className="border-b p-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t(`fields.${columnField}`)}</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t(`fields.${columnField}`)}
+          </h2>
           <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={onEdit}>
             <Pencil aria-hidden /> {t("editor.editCell")}
           </Button>
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">{t("editor.currentValue")}</p>
-        <p className="tabular truncate text-sm font-medium">{cell.value || <span className="text-muted-foreground">{t("editor.emptyCell")}</span>}</p>
+        <p className="tabular truncate text-sm font-medium">
+          {cell.value || <span className="text-muted-foreground">{t("editor.emptyCell")}</span>}
+        </p>
         <p className="mt-1 text-[11px] text-muted-foreground">
-          {t("editor.sourceTitle")}: {t(`provenance.${cell.provenance}`)} · {t(`review.${cell.reviewState}`)}
+          {t("editor.sourceTitle")}: {t(`provenance.${cell.provenance}`)} ·{" "}
+          {t(`review.${cell.reviewState}`)}
         </p>
         {cell.flags.length > 0 && (
           <ul className="mt-1.5 flex flex-wrap gap-1">
             {cell.flags.map((f) => (
-              <li key={f} className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", f === "invalid_format" ? "bg-destructive/10 text-destructive" : "bg-review/20 text-review-foreground")}>
+              <li
+                key={f}
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[11px] font-medium",
+                  f === "invalid_format"
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-review/20 text-review-foreground",
+                )}
+              >
                 {t(`flags.${f}`)}
               </li>
             ))}
@@ -65,6 +97,34 @@ export function CandidatePanel({ cell, columnField, candidates, tokens, onChoose
             <CheckCircle2 aria-hidden /> {t(cell.verified ? "editor.unverify" : "editor.verify")}
           </Button>
         </div>
+        {(onAutoFill || onBatchCorrect) && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {onAutoFill && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={onAutoFill}
+                disabled={!cell.value.trim()}
+                title={cell.value.trim() ? t("autofill.trigger") : t("autofill.needExample")}
+              >
+                <Wand2 aria-hidden /> {t("autofill.trigger")}
+              </Button>
+            )}
+            {onBatchCorrect &&
+              cell.flags.some((f) => f === "invalid_format" || f === "missing") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                  onClick={onBatchCorrect}
+                  title={t("batch.trigger")}
+                >
+                  <ListChecks aria-hidden /> {t("batch.trigger")}
+                </Button>
+              )}
+          </div>
+        )}
         <p className="mt-1.5 text-[11px] text-muted-foreground">{t("editor.verifyHint")}</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground">{t("editor.editHint")}</p>
       </div>
@@ -75,16 +135,22 @@ export function CandidatePanel({ cell, columnField, candidates, tokens, onChoose
         ) : (
           <ul className="mt-1.5 space-y-1" aria-label={t("editor.candidatesTitle")}>
             {candidates.slice(0, TOP_N).map((c) => {
-              const active = c.value === cell.value && c.tokenIds.join() === cell.sourceTokenIds.join();
+              const active =
+                c.value === cell.value && c.tokenIds.join() === cell.sourceTokenIds.join();
               return (
                 <li key={c.tokenIds.join()}>
                   <button
                     type="button"
                     onClick={() => onChooseCandidate(c)}
-                    className={cn("flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1 text-left text-[13px] hover:border-primary/60 hover:bg-accent/50", active && "border-primary bg-accent/60")}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1 text-left text-[13px] hover:border-primary/60 hover:bg-accent/50",
+                      active && "border-primary bg-accent/60",
+                    )}
                   >
                     <span className="tabular truncate">{c.value}</span>
-                    <span className="tabular shrink-0 text-[11px] text-muted-foreground">{t("editor.matchScore", { score: c.score.toFixed(2) })}</span>
+                    <span className="tabular shrink-0 text-[11px] text-muted-foreground">
+                      {t("editor.matchScore", { score: c.score.toFixed(2) })}
+                    </span>
                   </button>
                 </li>
               );
@@ -94,14 +160,26 @@ export function CandidatePanel({ cell, columnField, candidates, tokens, onChoose
         <p className="mt-1 text-[10px] text-muted-foreground">{t("editor.scoreNote")}</p>
 
         <h3 className="mt-3 text-xs font-semibold">{t("editor.allText")}</h3>
-        <Input ref={searchRef} className="mt-1.5 h-7 text-xs" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("editor.searchText")} aria-label={t("editor.searchText")} />
+        <Input
+          ref={searchRef}
+          className="mt-1.5 h-7 text-xs"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("editor.searchText")}
+          aria-label={t("editor.searchText")}
+        />
         {filtered.length === 0 ? (
           <p className="mt-1 text-xs text-muted-foreground">{t("editor.noTextFound")}</p>
         ) : (
           <ul className="mt-1.5 space-y-0.5">
             {filtered.map((tk) => (
               <li key={tk.id}>
-                <button type="button" onClick={() => onChooseToken(tk.id)} className="tabular w-full truncate rounded px-2 py-0.5 text-left text-xs hover:bg-accent/60" title={t("editor.useValue")}>
+                <button
+                  type="button"
+                  onClick={() => onChooseToken(tk.id)}
+                  className="tabular w-full truncate rounded px-2 py-0.5 text-left text-xs hover:bg-accent/60"
+                  title={t("editor.useValue")}
+                >
                   {tk.text}
                 </button>
               </li>
