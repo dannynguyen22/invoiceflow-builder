@@ -7,6 +7,8 @@ code and/or running tests/build — not by self-report.
 
 ## Verification snapshot (2026-11-09, initial audit)
 
+## Verification snapshot (2026-11-09, initial audit)
+
 | Check | Command | Result |
 |-------|---------|--------|
 | TypeScript | `npx tsc --noEmit` | ✅ clean |
@@ -14,7 +16,35 @@ code and/or running tests/build — not by self-report.
 | Production build | `npm run build` | ✅ succeeds |
 | Dependency audit | `npm audit` | ⚠️ 9 vulns (7 moderate, 2 high), all in dev deps (eslint toolchain, vite, zod). Not fixing with `--force` per constraints. |
 
-## Phase status
+## Verification snapshot (2026-11-09, after build-out)
+
+| Check | Command | Result |
+|-------|---------|--------|
+| TypeScript | `npx tsc --noEmit` | ✅ clean |
+| Tests | `npm test` | ✅ 122/122 pass (12 files) |
+| Production build | `npm run build` | ✅ succeeds |
+| Lint (changed files) | `npx eslint <changed>` | ✅ clean |
+| Privacy/network audit | grep for outbound fetch in `src/extraction` | ✅ none; OCR/PDF assets self-hosted under `/ocr`, `/pdfjs` (versions match installed pdfjs-dist 6.5.438 / tesseract.js 7.0.0) |
+| Dependency audit | `npm audit` | ⚠️ 9 vulns (7 moderate, 2 high), all dev-only; `--force` not run per constraints |
+
+## MVP acceptance checklist (PRD §14)
+
+| # | Criterion | Status | Evidence |
+|---|-----------|--------|----------|
+| 1 | Header replacement preserves value + OCR provenance; undo restores header | ✅ | `engine.replaceColumnField`; `editor-engine.test.ts` |
+| 2 | Add column preserves data, never invents values | ✅ | `engine.addColumn` fills only reliable candidates; `editor-engine.test.ts` |
+| 3 | OCR token drop blocks cross-document mapping | ✅ | `engine.assignToken` cross_document guard; tests |
+| 4 | Single click shows ranked candidates from correct invoice; double click edits | ✅ | `CellPicker`/`CandidatePanel`; `cell-picker.test.tsx` |
+| 5 | Auto-fill finds distinct per-document values, abstains on uncertainty | ✅ | `smart.planAutoFill` (own candidate per doc, review bucket); `smart.test.ts` |
+| 6 | Batch correction previews affected rows, reverses in one undo | ✅ | `smart.planBatchCorrection`/`applyBatchCorrection`; `smart.test.ts` |
+| 7 | Source preview highlights correct page/region for selected cell | ✅ | `DocumentPreview`; `document-preview.test.tsx` |
+| 8 | Tax IDs / invoice numbers retain leading zeros in CSV and XLSX | ✅ | XLSX inline strings + CSV text; `export.test.ts` |
+| 9 | Google user A cannot read user B templates; guest can export without login | 🟡 | Guest export ✅; Google/RLS **deferred** (blocker) — local templates are per-browser |
+| 10 | Switching vi/en translates all app text but does not rename custom export headers | ✅ | i18n parity test; `buildExportColumns` keeps `headerOverrides` |
+| 11 | Local-mode network audit shows no invoice content transmitted | ✅ | no outbound fetch in extraction; self-hosted assets |
+| 12 | Corrupt/unsupported files fail gracefully; partial batch succeeds | ✅ | `extraction/files.ts` precheck + `errors.ts`; `extraction.test.ts` |
+
+## Detailed findings (initial audit)
 
 | Phase | PRD scope | Status |
 |-------|-----------|--------|
@@ -91,3 +121,8 @@ for an authed Supabase table with RLS, keyed by user id.
 server, zod). Per task constraints `npm audit fix --force` was NOT run (it would pull breaking major versions
 of vite/zod outside the stated ranges). None affect the shipped client bundle's runtime behaviour; the vite
 advisories concern the local dev server only.
+- 2026-11-09: Phase 6 QA pass. Behavioral review (semantic_reviewer) surfaced two issues, both fixed:
+  (a) CSV formula guard corrupted negative amounts — now plain numbers bypass the guard;
+  (b) smart ops now defensively enforce candidate token-ownership. Privacy/network audit: no outbound
+  invoice-content requests; OCR/PDF assets self-hosted, versions match installed packages. Added
+  acceptance-checklist + verification snapshot above. 123 tests pass, build + typecheck + lint clean.

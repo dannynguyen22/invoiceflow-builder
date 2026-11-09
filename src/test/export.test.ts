@@ -202,3 +202,17 @@ describe("export templates (local persistence)", () => {
     expect(listTemplates().find((t) => t.id === saved.id)).toBeUndefined();
   });
 });
+
+import { buildExportColumns } from "@/export/model";
+
+describe("export headers vs locale (PRD §14 #10)", () => {
+  it("defaults headers to the locale label but keeps custom headers across a language switch", () => {
+    const cols = [{ id: "c1", fieldId: "total_amount" as const }];
+    expect(buildExportColumns(cols, "vi")[0]!.header).toBe("Tổng thanh toán");
+    expect(buildExportColumns(cols, "en")[0]!.header).toBe("Total");
+    // A custom (template) header is NOT rewritten when the locale changes.
+    const overrides = { c1: "Grand Total" };
+    expect(buildExportColumns(cols, "vi", overrides)[0]!.header).toBe("Grand Total");
+    expect(buildExportColumns(cols, "en", overrides)[0]!.header).toBe("Grand Total");
+  });
+});

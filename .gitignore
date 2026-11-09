@@ -19,6 +19,9 @@ dist-ssr
 # Stray npm lockfile (this project uses bun.lock)
 package-lock.json
 
+# Local review artifacts
+semantic-review/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
