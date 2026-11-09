@@ -201,7 +201,17 @@
     "emptyScope": "Không có hóa đơn nào phù hợp phạm vi đã chọn.",
     "identifierNote": "Mã số thuế và số hóa đơn được giữ nguyên dạng chuỗi (không mất số 0 ở đầu).",
     "columnsTitle": "Cột xuất",
-    "columnsHint": "Thứ tự và tiêu đề cột lấy từ bảng hiện tại."
+    "columnsHint": "Thứ tự và tiêu đề cột lấy từ bảng hiện tại.",
+    "templatesTitle": "Mẫu xuất đã lưu",
+    "templateName": "Tên mẫu",
+    "saveTemplate": "Lưu mẫu",
+    "templateSaved": "Đã lưu mẫu “{{name}}”.",
+    "templateApplied": "Đã áp dụng mẫu “{{name}}”.",
+    "templateDeleted": "Đã xóa mẫu.",
+    "noTemplates": "Chưa có mẫu nào. Lưu cấu hình hiện tại để dùng lại.",
+    "apply": "Dùng mẫu",
+    "delete": "Xóa",
+    "templateHint": "Mẫu chỉ lưu cấu hình xuất (định dạng, dấu phân cách, BOM) trên trình duyệt này — không chứa nội dung hóa đơn."
   },
   "autofill": {
     "trigger": "Tìm giá trị tương tự",

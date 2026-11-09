@@ -23,7 +23,7 @@ code and/or running tests/build — not by self-report.
 | 2 — Real extraction | XML parser, PDF.js text, OCR worker, bbox overlays, raw store, per-file status | ✅ Complete |
 | 3 — Matching/review | exact/fuzzy aliases, ranking, validation, exception-first filters, source linking | ✅ Complete — matching, source linking, **Needs-Review filter**, **VAT/duplicate checks** done |
 | 4 — Smart operations | Smart Auto-fill, scope matching, Batch Correction, preview, atomic undo | ✅ Complete — engine + preview dialogs, per-row own values, protection, atomic undo |
-| 5 — Account/export | Google sign-in, RLS templates, CSV/XLSX, UTF-8 BOM, identifiers as strings | 🟡 CSV/XLSX export done; auth/templates intentionally deferred (guest-only MVP, see note) |
+| 5 — Account/export | Google sign-in, RLS templates, CSV/XLSX, UTF-8 BOM, identifiers as strings | 🟡 CSV/XLSX export + **local saved templates** done; Google OAuth + Supabase-RLS sync **deferred** (blocker below) |
 | 6 — QA/beta | security/network audit, perf, i18n coverage, a11y, acceptance matrix | 🟡 In progress |
 
 ## Detailed findings (initial audit)
@@ -69,3 +69,25 @@ code and/or running tests/build — not by self-report.
   op (one undo). Added **Needs-Review filter** toolbar toggle + count (exception-first review, Phase 3).
   5 new smart-ops tests (own-value, scope, protection, atomic undo). Changed files lint-clean & formatted.
   121 tests pass, build + typecheck clean.
+- 2026-11-09: Added **local saved export templates** (`src/export/templates.ts`): guest-friendly,
+  localStorage-persisted format/delimiter/BOM + column order; save/apply/delete in the export dialog.
+  No invoice content stored. 1 new test. 122 tests pass, build + typecheck + lint clean.
+
+## Known blockers / deferred (documented per task constraints)
+
+### Google OAuth + Supabase-RLS template sync (PRD §10, Phase 5) — DEFERRED
+Real signed-in accounts with row-level-security template storage require:
+- a Supabase project + Google OAuth client (external credentials not available in this environment), and
+- backend auth/DB changes that AGENTS.md reserves for Lovable ("Do not add or edit supabase/migrations;
+  ask Lovable to change the schema"; "keep model calls on Lovable's gateway").
+The PRD states Google sign-in is **optional** and that **guest workflows must work end to end** — which they
+do (upload → extract → review → export, no login). Saved templates are delivered locally so returning guests
+keep their export shape without any backend. When Lovable auth/DB is connected, the `ExportTemplate` domain
+type (with `userId`) and `src/export/templates.ts` are the integration seam: swap the localStorage read/write
+for an authed Supabase table with RLS, keyed by user id.
+
+### Dependency audit — not auto-fixed
+`npm audit` reports 9 vulns (7 moderate, 2 high) entirely in dev dependencies (eslint toolchain, vite dev
+server, zod). Per task constraints `npm audit fix --force` was NOT run (it would pull breaking major versions
+of vite/zod outside the stated ranges). None affect the shipped client bundle's runtime behaviour; the vite
+advisories concern the local dev server only.

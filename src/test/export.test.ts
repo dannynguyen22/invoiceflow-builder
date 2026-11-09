@@ -178,3 +178,22 @@ describe("invoice cross-field checks", () => {
     expect(Array.isArray(allIssues(FIXTURE_RAW, state))).toBe(true);
   });
 });
+
+import { saveTemplate, listTemplates, deleteTemplate } from "@/export/templates";
+
+describe("export templates (local persistence)", () => {
+  it("saves, lists and deletes templates", () => {
+    const before = listTemplates().length;
+    const saved = saveTemplate({
+      name: "My CSV",
+      format: { type: "csv", delimiter: ";", utf8Bom: true },
+      fieldOrder: ["invoice_number", "total_amount"],
+      headers: {},
+    });
+    const list = listTemplates();
+    expect(list.length).toBe(before + 1);
+    expect(list.find((t) => t.id === saved.id)?.format.delimiter).toBe(";");
+    deleteTemplate(saved.id);
+    expect(listTemplates().find((t) => t.id === saved.id)).toBeUndefined();
+  });
+});

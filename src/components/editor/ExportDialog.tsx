@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Download, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
@@ -17,6 +18,12 @@ import type { EditorColumn, RawExtraction } from "@/domain/types";
 import type { EditorState } from "@/editor/engine";
 import { allIssues } from "@/domain/invoice-checks";
 import { buildExportRows, runExport, type ExportScope } from "@/export";
+import {
+  deleteTemplate,
+  listTemplates,
+  saveTemplate,
+  type SavedExportTemplate,
+} from "@/export/templates";
 import { useI18n } from "@/i18n";
 
 interface Props {
@@ -34,6 +41,40 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
   const [format, setFormat] = useState<"csv" | "xlsx">("xlsx");
   const [delimiter, setDelimiter] = useState<"," | ";" | "\t">(",");
   const [bom, setBom] = useState(true);
+  const [templates, setTemplates] = useState<SavedExportTemplate[]>([]);
+  const [templateName, setTemplateName] = useState("");
+
+  // Load saved templates when the dialog opens (client-only; localStorage).
+  useEffect(() => {
+    if (open) setTemplates(listTemplates());
+  }, [open]);
+
+  const applyTemplate = (tpl: SavedExportTemplate) => {
+    setFormat(tpl.format.type);
+    setDelimiter(tpl.format.delimiter);
+    setBom(tpl.format.utf8Bom);
+    toast.success(t("export.templateApplied", { name: tpl.name }));
+  };
+
+  const onSaveTemplate = () => {
+    const name = templateName.trim();
+    if (!name) return;
+    saveTemplate({
+      name,
+      format: { type: format, delimiter, utf8Bom: bom },
+      fieldOrder: columns.map((c) => c.fieldId),
+      headers: {},
+    });
+    setTemplates(listTemplates());
+    setTemplateName("");
+    toast.success(t("export.templateSaved", { name }));
+  };
+
+  const onDeleteTemplate = (id: string) => {
+    deleteTemplate(id);
+    setTemplates(listTemplates());
+    toast(t("export.templateDeleted"));
+  };
 
   const rows = useMemo(() => buildExportRows(raw, state, columns), [raw, state, columns]);
   const validCount = rows.filter((r) => r.valid).length;
@@ -74,7 +115,7 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
           <Download aria-hidden /> <span className="hidden sm:inline">{t("export.open")}</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("export.title")}</DialogTitle>
           <DialogDescription>{t("export.description")}</DialogDescription>
@@ -146,6 +187,70 @@ export function ExportDialog({ raw, state, columns, disabled }: Props) {
               </label>
             </div>
           )}
+
+          <section className="space-y-2 border-t pt-3">
+            <h3 className="font-medium">{t("export.templatesTitle")}</h3>
+            {templates.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t("export.noTemplates")}</p>
+            ) : (
+              <ul className="space-y-1">
+                {templates.map((tpl) => (
+                  <li
+                    key={tpl.id}
+                    className="flex items-center gap-2 rounded border px-2 py-1 text-xs"
+                  >
+                    <span className="flex-1 truncate" title={tpl.name}>
+                      {tpl.name}
+                    </span>
+                    <span className="shrink-0 text-muted-foreground">
+                      {tpl.format.type.toUpperCase()}
+                      {tpl.format.type === "csv" && tpl.format.utf8Bom ? " · BOM" : ""}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2"
+                      onClick={() => applyTemplate(tpl)}
+                    >
+                      {t("export.apply")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-1 text-muted-foreground"
+                      onClick={() => onDeleteTemplate(tpl.id)}
+                      aria-label={t("export.delete")}
+                      title={t("export.delete")}
+                    >
+                      <Trash2 className="size-3.5" aria-hidden />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex items-center gap-2">
+              <Input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder={t("export.templateName")}
+                className="h-7 text-xs"
+                aria-label={t("export.templateName")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSaveTemplate();
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 shrink-0 px-2 text-xs"
+                onClick={onSaveTemplate}
+                disabled={!templateName.trim()}
+              >
+                <Save aria-hidden /> {t("export.saveTemplate")}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">{t("export.templateHint")}</p>
+          </section>
 
           <p className="text-xs text-muted-foreground">{t("export.identifierNote")}</p>
         </div>

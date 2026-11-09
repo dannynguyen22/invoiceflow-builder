@@ -201,7 +201,17 @@
     "emptyScope": "No invoices match the selected scope.",
     "identifierNote": "Tax IDs and invoice numbers are kept as text (leading zeros are preserved).",
     "columnsTitle": "Export columns",
-    "columnsHint": "Column order and headers come from the current grid."
+    "columnsHint": "Column order and headers come from the current grid.",
+    "templatesTitle": "Saved export templates",
+    "templateName": "Template name",
+    "saveTemplate": "Save template",
+    "templateSaved": "Saved template “{{name}}”.",
+    "templateApplied": "Applied template “{{name}}”.",
+    "templateDeleted": "Template deleted.",
+    "noTemplates": "No templates yet. Save the current settings to reuse them.",
+    "apply": "Use",
+    "delete": "Delete",
+    "templateHint": "A template only stores export settings (format, delimiter, BOM) in this browser — never invoice content."
   },
   "autofill": {
     "trigger": "Find similar values",
