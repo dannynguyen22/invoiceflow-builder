@@ -1,7 +1,19 @@
 {
-  "app": { "name": "InvoiceFlow", "tagline": "Invoices into spreadsheets, clean and under control" },
-  "nav": { "home": "Home", "workspace": "Upload", "editor": "Editor", "skipToContent": "Skip to main content" },
-  "locale": { "label": "Language", "vi": "Tiếng Việt", "en": "English" },
+  "app": {
+    "name": "InvoiceFlow",
+    "tagline": "Invoices into spreadsheets, clean and under control"
+  },
+  "nav": {
+    "home": "Home",
+    "workspace": "Upload",
+    "editor": "Editor",
+    "skipToContent": "Skip to main content"
+  },
+  "locale": {
+    "label": "Language",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
   "meta": {
     "homeTitle": "InvoiceFlow — Turn invoices into CSV/Excel",
     "homeDescription": "Upload PDF, XML and image invoices; extract, review and export CSV/XLSX for business accounting.",
@@ -56,11 +68,64 @@
     "searchFields": "Search fields…",
     "noFieldsFound": "No matching fields",
     "previewEmpty": "Select a cell to see its location on the original document.",
-    "interactionsPending": "Drag and drop, candidate picking and editing arrive in Phase 1.",
+    "interactionsPending": "Uploading and reading real files arrives in a later update.",
     "emptyCell": "Empty",
-    "invoiceCount": "{{count}} invoices"
+    "invoiceCount": "{{count}} invoices",
+    "toolbarLabel": "Editing actions",
+    "undo": "Undo",
+    "redo": "Redo",
+    "addColumn": "Add column",
+    "addColumnZone": "Drop a field here to add a column",
+    "replaceSelectedColumn": "Replace selected column",
+    "fieldActions": "Actions for field {{field}}",
+    "fieldDragHint": "Drag a field onto a column header to change it, or onto “Add column”.",
+    "columnMenu": "Options for column {{field}}",
+    "changeField": "Change field",
+    "moveLeft": "Move left",
+    "moveRight": "Move right",
+    "rowHeader": "Invoice",
+    "candidatesTitle": "Suggested values",
+    "candidatesEmpty": "No suggested values for this field.",
+    "selectCellHint": "Select a cell to see suggested values.",
+    "currentValue": "Current value",
+    "matchScore": "Match score {{score}}",
+    "scoreNote": "Match scores are for ranking only, not a probability of being correct.",
+    "allText": "All text on the invoice",
+    "searchText": "Search invoice text…",
+    "noTextFound": "No matching text",
+    "useValue": "Use this value",
+    "editHint": "Double-click or press F2 to edit manually.",
+    "editCell": "Edit cell",
+    "editInputLabel": "Edit {{field}} value",
+    "previewOf": "Original invoice: {{name}}",
+    "pageOf": "Page {{page}}/{{total}}",
+    "tokenHint": "Drag text into a cell of the same invoice, or click it to assign to the selected cell.",
+    "tokenLabel": "Text “{{text}}”",
+    "sourceTitle": "Source",
+    "keyboardTitle": "Keyboard shortcuts",
+    "keyNavigate": "Move between cells",
+    "keyEdit": "Edit selected cell",
+    "keyCommit": "Save change",
+    "keyCancel": "Cancel editing",
+    "keyUndo": "Undo",
+    "keyRedo": "Redo",
+    "openFields": "Fields",
+    "fieldReplaced": "Column changed to “{{field}}”. All values were kept.",
+    "flaggedCount": "{{count}} cells need review.",
+    "columnAdded": "Added column “{{field}}”.",
+    "valueAssigned": "Assigned value “{{value}}”.",
+    "undone": "Undone.",
+    "redone": "Redone.",
+    "nothingToUndo": "Nothing to undo.",
+    "nothingToRedo": "Nothing to redo."
   },
-  "fieldGroups": { "invoice": "Invoice", "seller": "Seller", "buyer": "Buyer", "amounts": "Amounts", "metadata": "Metadata" },
+  "fieldGroups": {
+    "invoice": "Invoice",
+    "seller": "Seller",
+    "buyer": "Buyer",
+    "amounts": "Amounts",
+    "metadata": "Metadata"
+  },
   "fields": {
     "invoice_number": "Invoice number",
     "invoice_date": "Invoice date",
@@ -78,8 +143,45 @@
     "notes": "Notes",
     "review_status": "Review status"
   },
-  "review": { "unreviewed": "Unreviewed", "needs_review": "Needs review", "confirmed": "Confirmed", "manual": "Manually edited" },
-  "notFound": { "title": "Page not found", "body": "The page you're looking for doesn't exist or has been moved.", "home": "Go home" },
-  "error": { "title": "This page didn't load", "body": "Something went wrong. Try again or head back home.", "retry": "Try again", "home": "Go home" },
-  "footer": { "beta": "Free beta", "rights": "© {{year}} InvoiceFlow" }
+  "review": {
+    "unreviewed": "Unreviewed",
+    "needs_review": "Needs review",
+    "confirmed": "Confirmed",
+    "manual": "Manually edited"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist or has been moved.",
+    "home": "Go home"
+  },
+  "error": {
+    "title": "This page didn't load",
+    "body": "Something went wrong. Try again or head back home.",
+    "retry": "Try again",
+    "home": "Go home"
+  },
+  "footer": {
+    "beta": "Free beta",
+    "rights": "© {{year}} InvoiceFlow"
+  },
+  "flags": {
+    "missing": "Missing value",
+    "invalid_format": "Invalid format",
+    "field_mismatch": "Value may not belong to this field"
+  },
+  "provenance": {
+    "extracted": "Extracted automatically",
+    "candidate": "Chosen from suggestions",
+    "ocr_drop": "Assigned from the original",
+    "manual": "Entered manually",
+    "auto_fill": "Auto-filled",
+    "batch": "Batch corrected",
+    "empty": "No data yet"
+  },
+  "errors": {
+    "cross_document": "You can only use text from this row's own invoice.",
+    "unknown_token": "This text was not found on the invoice.",
+    "unknown_cell": "The cell could not be found.",
+    "duplicate_column": "This column already exists."
+  }
 }

@@ -1,5 +1,15 @@
 // Domain contracts (PRD §08). Three layers that must stay separate:
-// A) raw extraction (immutable)  B) interpreted records  C) export view.
+//  A) Raw extraction (immutable): documents, pages, OCR tokens, candidates.
+//  B) Interpreted records: one Cell per (document, column). Each cell carries its OWN
+//     field interpretation (`Cell.fieldId`), which can differ from the column's field.
+//  C) Export view: which columns are exported, their headers, order and format.
+//
+// Three distinct "field" notions — never conflate them:
+//  - EditorColumn.fieldId : the column's schema field (what the header says).
+//  - Cell.fieldId         : what this specific value was extracted/confirmed as.
+//  - ExportColumn         : export configuration (header text, order) derived from columns.
+// A header replacement changes EditorColumn.fieldId only. Cells keep value, sources and
+// interpretation; cells whose interpretation no longer matches are flagged for review.
 
 export type FieldId =
   | "invoice_number"
@@ -19,7 +29,7 @@ export type FieldId =
   | "review_status";
 
 export type FieldGroup = "invoice" | "seller" | "buyer" | "amounts" | "metadata";
-export type FieldValueType = "text" | "identifier" | "date" | "amount" | "currency" | "status";
+export type FieldValueType = "text" | "identifier" | "tax_id" | "date" | "amount" | "currency" | "status";
 
 export interface FieldDefinition {
   id: FieldId;
@@ -39,11 +49,16 @@ export interface BBox {
   width: number;
   height: number;
 }
+export interface PageSize {
+  width: number;
+  height: number;
+}
 export interface InvoiceDocument {
   readonly id: string;
   readonly name: string;
   readonly mime: SupportedMime;
   readonly pages: number;
+  readonly pageSize: PageSize;
   status: DocumentStatus;
 }
 export interface OCRToken {
@@ -55,8 +70,6 @@ export interface OCRToken {
   /** Engine-reported confidence 0–1; not a calibrated probability. */
   readonly confidence: number;
 }
-
-// ---- Layer B: interpreted records ----
 export interface FieldCandidate {
   fieldId: FieldId;
   tokenIds: string[];
@@ -65,18 +78,32 @@ export interface FieldCandidate {
   score: number;
   reasons: string[];
 }
+export interface RawExtraction {
+  readonly documents: readonly InvoiceDocument[];
+  readonly tokens: readonly OCRToken[];
+  /** Candidates per document id. */
+  readonly candidates: Readonly<Record<string, readonly FieldCandidate[]>>;
+}
+
+// ---- Layer B: interpreted records ----
 export type ReviewState = "unreviewed" | "needs_review" | "confirmed" | "manual";
-export type Provenance = "extracted" | "candidate" | "ocr_drop" | "manual" | "auto_fill" | "batch";
+export type Provenance = "extracted" | "candidate" | "ocr_drop" | "manual" | "auto_fill" | "batch" | "empty";
+export type CellFlag = "missing" | "invalid_format" | "field_mismatch";
 export interface Cell {
   documentId: string;
   columnId: string;
-  /** Per-cell semantic field; may differ from column field after header replacement. */
+  /** Per-cell semantic interpretation; may differ from the column field after header replacement. */
   fieldId: FieldId;
   value: string;
   sourceTokenIds: string[];
   provenance: Provenance;
   reviewState: ReviewState;
-  flags: string[];
+  flags: CellFlag[];
+}
+/** Grid/schema column. Order = position in the columns array; identity = stable `id`. */
+export interface EditorColumn {
+  id: string;
+  fieldId: FieldId;
 }
 
 // ---- Layer C: export view ----
@@ -93,7 +120,7 @@ export type CorrectionKind =
   | "reorder_columns"
   | "auto_fill"
   | "batch_correction";
-export type CorrectionScope = "cell" | "current_invoice" | "same_supplier" | "similar_layout" | "batch";
+export type CorrectionScope = "cell" | "column" | "current_invoice" | "same_supplier" | "similar_layout" | "batch";
 export interface CellChange {
   documentId: string;
   columnId: string;
@@ -105,6 +132,8 @@ export interface CorrectionOperation {
   kind: CorrectionKind;
   scope: CorrectionScope;
   changes: CellChange[];
+  /** Present when the operation changed the column schema. */
+  columns?: { before: EditorColumn[]; after: EditorColumn[] } | undefined;
   createdAt: string;
 }
 export interface ExportTemplate {

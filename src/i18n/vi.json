@@ -1,18 +1,30 @@
 {
-  "app": { "name": "InvoiceFlow", "tagline": "Chuyển hóa đơn sang Excel nhanh, chính xác" },
-  "nav": { "home": "Trang chủ", "workspace": "Tải hóa đơn", "editor": "Chỉnh sửa", "skipToContent": "Chuyển đến nội dung chính" },
-  "locale": { "label": "Ngôn ngữ", "vi": "Tiếng Việt", "en": "English" },
+  "app": {
+    "name": "InvoiceFlow",
+    "tagline": "Chuyển hóa đơn sang Excel nhanh, chính xác"
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "workspace": "Tải hóa đơn",
+    "editor": "Chỉnh sửa",
+    "skipToContent": "Chuyển đến nội dung chính"
+  },
+  "locale": {
+    "label": "Ngôn ngữ",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
   "meta": {
     "homeTitle": "InvoiceFlow — Chuyển hóa đơn sang Excel, CSV miễn phí",
     "homeDescription": "Tải hóa đơn PDF, XML hoặc ảnh chụp, kiểm tra dữ liệu và xuất Excel, CSV. Dành cho doanh nghiệp và kế toán.",
     "workspaceTitle": "Tải hóa đơn — InvoiceFlow",
-    "workspaceDescription": "Tải nhiều hóa đơn PDF, XML, JPG, PNG cùng lúc để lấy dữ liệu.",
+    "workspaceDescription": "Tải nhiều hóa đơn PDF, XML, JPG, PNG cùng lúc để trích xuất dữ liệu.",
     "editorTitle": "Chỉnh sửa dữ liệu — InvoiceFlow",
     "editorDescription": "Kiểm tra, chỉnh sửa và sắp xếp dữ liệu hóa đơn trước khi xuất file."
   },
   "landing": {
     "eyebrow": "Dành cho doanh nghiệp và kế toán",
-    "headline": "Nhập liệu hóa đơn vào Excel, không cần gõ tay",
+    "headline": "Chuyển hàng loạt hóa đơn thành Excel, không cần nhập tay",
     "subhead": "Tải lên hóa đơn điện tử XML, PDF hoặc ảnh chụp. Kiểm tra các ô cần xem lại, sửa hàng loạt và xuất Excel chỉ trong vài phút.",
     "ctaPrimary": "Chuyển hóa đơn miễn phí",
     "ctaSecondary": "Xem cách sử dụng",
@@ -20,7 +32,7 @@
     "stepsTitle": "Chỉ 4 bước đơn giản",
     "step1Title": "Tải hóa đơn",
     "step1Body": "Kéo thả nhiều hóa đơn cùng lúc.",
-    "step2Title": "Lấy dữ liệu",
+    "step2Title": "Trích xuất dữ liệu",
     "step2Body": "Tự động đọc file XML, PDF và ảnh chụp ngay trên trình duyệt.",
     "step3Title": "Kiểm tra dữ liệu",
     "step3Body": "Ưu tiên các ô cần xem lại, đối chiếu trực tiếp với hóa đơn gốc.",
@@ -56,11 +68,64 @@
     "searchFields": "Tìm trường dữ liệu…",
     "noFieldsFound": "Không tìm thấy trường phù hợp",
     "previewEmpty": "Chọn một ô để xem vị trí tương ứng trên hóa đơn gốc.",
-    "interactionsPending": "Kéo thả, chọn giá trị đề xuất và chỉnh sửa sẽ có trong bản cập nhật tới.",
+    "interactionsPending": "Tải và đọc file thật sẽ có trong bản cập nhật tới.",
     "emptyCell": "Trống",
-    "invoiceCount": "{{count}} hóa đơn"
+    "invoiceCount": "{{count}} hóa đơn",
+    "toolbarLabel": "Thao tác chỉnh sửa",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
+    "addColumn": "Thêm cột",
+    "addColumnZone": "Thả trường vào đây để thêm cột",
+    "replaceSelectedColumn": "Thay cho cột đang chọn",
+    "fieldActions": "Thao tác với trường {{field}}",
+    "fieldDragHint": "Kéo trường vào tiêu đề cột để đổi trường, hoặc vào ô “Thêm cột”.",
+    "columnMenu": "Tùy chọn cột {{field}}",
+    "changeField": "Đổi trường",
+    "moveLeft": "Chuyển sang trái",
+    "moveRight": "Chuyển sang phải",
+    "rowHeader": "Hóa đơn",
+    "candidatesTitle": "Giá trị đề xuất",
+    "candidatesEmpty": "Không có giá trị đề xuất cho trường này.",
+    "selectCellHint": "Chọn một ô để xem giá trị đề xuất.",
+    "currentValue": "Giá trị hiện tại",
+    "matchScore": "Điểm khớp {{score}}",
+    "scoreNote": "Điểm khớp dùng để xếp hạng, không phải xác suất chính xác.",
+    "allText": "Tất cả văn bản trên hóa đơn",
+    "searchText": "Tìm văn bản trên hóa đơn…",
+    "noTextFound": "Không tìm thấy văn bản phù hợp",
+    "useValue": "Dùng giá trị này",
+    "editHint": "Nhấp đúp hoặc nhấn F2 để sửa thủ công.",
+    "editCell": "Sửa ô",
+    "editInputLabel": "Sửa giá trị {{field}}",
+    "previewOf": "Hóa đơn gốc: {{name}}",
+    "pageOf": "Trang {{page}}/{{total}}",
+    "tokenHint": "Kéo văn bản vào ô cùng hóa đơn, hoặc nhấp để gán cho ô đang chọn.",
+    "tokenLabel": "Văn bản “{{text}}”",
+    "sourceTitle": "Nguồn",
+    "keyboardTitle": "Phím tắt",
+    "keyNavigate": "Di chuyển giữa các ô",
+    "keyEdit": "Sửa ô đang chọn",
+    "keyCommit": "Lưu thay đổi",
+    "keyCancel": "Hủy sửa",
+    "keyUndo": "Hoàn tác",
+    "keyRedo": "Làm lại",
+    "openFields": "Trường dữ liệu",
+    "fieldReplaced": "Đã đổi cột thành “{{field}}”. Mọi giá trị được giữ nguyên.",
+    "flaggedCount": "{{count}} ô cần xem lại.",
+    "columnAdded": "Đã thêm cột “{{field}}”.",
+    "valueAssigned": "Đã gán giá trị “{{value}}”.",
+    "undone": "Đã hoàn tác.",
+    "redone": "Đã làm lại.",
+    "nothingToUndo": "Không còn thao tác để hoàn tác.",
+    "nothingToRedo": "Không còn thao tác để làm lại."
   },
-  "fieldGroups": { "invoice": "Hóa đơn", "seller": "Người bán", "buyer": "Người mua", "amounts": "Số tiền", "metadata": "Thông tin khác" },
+  "fieldGroups": {
+    "invoice": "Hóa đơn",
+    "seller": "Người bán",
+    "buyer": "Người mua",
+    "amounts": "Số tiền",
+    "metadata": "Thông tin khác"
+  },
   "fields": {
     "invoice_number": "Số hóa đơn",
     "invoice_date": "Ngày hóa đơn",
@@ -71,15 +136,52 @@
     "buyer_name": "Tên người mua",
     "buyer_tax_id": "MST người mua",
     "subtotal": "Tiền trước thuế",
-    "vat_amount": "Tiền VAT",
+    "vat_amount": "Tiền thuế GTGT",
     "total_amount": "Tổng thanh toán",
-    "currency": "Loại tiền",
+    "currency": "Đơn vị tiền tệ",
     "source_filename": "Tên file",
     "notes": "Ghi chú",
     "review_status": "Trạng thái"
   },
-  "review": { "unreviewed": "Chưa kiểm tra", "needs_review": "Cần xem lại", "confirmed": "Đã xác nhận", "manual": "Đã sửa thủ công" },
-  "notFound": { "title": "Không tìm thấy trang", "body": "Trang này không tồn tại hoặc đã được chuyển đi.", "home": "Về trang chủ" },
-  "error": { "title": "Không thể tải trang", "body": "Đã xảy ra lỗi. Vui lòng thử lại hoặc quay về trang chủ.", "retry": "Thử lại", "home": "Về trang chủ" },
-  "footer": { "beta": "Miễn phí trong giai đoạn thử nghiệm", "rights": "© {{year}} InvoiceFlow" }
+  "review": {
+    "unreviewed": "Chưa kiểm tra",
+    "needs_review": "Cần xem lại",
+    "confirmed": "Đã xác nhận",
+    "manual": "Đã sửa thủ công"
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "body": "Trang này không tồn tại hoặc đã được chuyển đi.",
+    "home": "Về trang chủ"
+  },
+  "error": {
+    "title": "Không thể tải trang",
+    "body": "Đã xảy ra lỗi. Vui lòng thử lại hoặc quay về trang chủ.",
+    "retry": "Thử lại",
+    "home": "Về trang chủ"
+  },
+  "footer": {
+    "beta": "Miễn phí trong giai đoạn thử nghiệm",
+    "rights": "© {{year}} InvoiceFlow"
+  },
+  "flags": {
+    "missing": "Thiếu giá trị",
+    "invalid_format": "Sai định dạng",
+    "field_mismatch": "Giá trị có thể không thuộc trường này"
+  },
+  "provenance": {
+    "extracted": "Trích xuất tự động",
+    "candidate": "Chọn từ giá trị đề xuất",
+    "ocr_drop": "Gán từ hóa đơn gốc",
+    "manual": "Nhập thủ công",
+    "auto_fill": "Tự động điền",
+    "batch": "Sửa hàng loạt",
+    "empty": "Chưa có dữ liệu"
+  },
+  "errors": {
+    "cross_document": "Chỉ dùng được văn bản từ chính hóa đơn của dòng này.",
+    "unknown_token": "Không tìm thấy văn bản này trên hóa đơn.",
+    "unknown_cell": "Không tìm thấy ô cần sửa.",
+    "duplicate_column": "Cột này đã tồn tại."
+  }
 }

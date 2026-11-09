@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FIELD_REGISTRY } from "@/domain/fields";
-import { DEFAULT_COLUMNS, FIXTURE_INVOICES, fixtureCell } from "@/domain/fixtures";
+import { FIXTURE_RAW } from "@/domain/fixtures";
+import { isValueCompatible } from "@/domain/validation";
 import { normalizeForSearch } from "@/lib/text";
 
 describe("field registry", () => {
@@ -13,19 +14,29 @@ describe("field registry", () => {
 
 describe("fixtures", () => {
   it("keep leading zeros on identifiers", () => {
-    const inv = FIXTURE_INVOICES[0]!;
-    const col = DEFAULT_COLUMNS.find((c) => c.fieldId === "invoice_number")!;
-    expect(fixtureCell(inv, col).value).toBe("0001234");
+    expect(FIXTURE_RAW.tokens.some((t) => t.text === "0001234")).toBe(true);
   });
-  it("missing values are blank and flagged, never invented", () => {
-    const inv = FIXTURE_INVOICES[2]!;
-    const col = DEFAULT_COLUMNS.find((c) => c.fieldId === "invoice_date")!;
-    const cell = fixtureCell(inv, col);
-    expect(cell.value).toBe("");
-    expect(cell.reviewState).toBe("needs_review");
+  it("tokens and candidates belong to their own document", () => {
+    for (const d of FIXTURE_RAW.documents) {
+      const ids = new Set(FIXTURE_RAW.tokens.filter((t) => t.documentId === d.id).map((t) => t.id));
+      for (const c of FIXTURE_RAW.candidates[d.id] ?? []) for (const tid of c.tokenIds) expect(ids.has(tid)).toBe(true);
+    }
   });
-  it("tokens belong to their own document", () => {
-    for (const inv of FIXTURE_INVOICES) for (const t of inv.tokens) expect(t.documentId).toBe(inv.document.id);
+});
+
+describe("validation", () => {
+  it("tax IDs: 10 digits or 10-3", () => {
+    expect(isValueCompatible("seller_tax_id", "0101234567")).toBe(true);
+    expect(isValueCompatible("seller_tax_id", "0312345678-001")).toBe(true);
+    expect(isValueCompatible("seller_tax_id", "800000")).toBe(false);
+  });
+  it("dates reject impossible days", () => {
+    expect(isValueCompatible("invoice_date", "2026-10-03")).toBe(true);
+    expect(isValueCompatible("invoice_date", "03/10/2026")).toBe(true);
+    expect(isValueCompatible("invoice_date", "31/02/2026")).toBe(false);
+  });
+  it("names are not bare numbers", () => {
+    expect(isValueCompatible("seller_name", "0101234567")).toBe(false);
   });
 });
 

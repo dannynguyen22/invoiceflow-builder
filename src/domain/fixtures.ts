@@ -1,96 +1,94 @@
 // TEST/DEV FIXTURES ONLY. Synthetic invoices used to develop the editor (Phase 1)
 // before real extraction exists (Phase 2). Never presented as real processing output.
-import type { Cell, ExportColumn, FieldCandidate, FieldId, InvoiceDocument, OCRToken } from "./types";
+import type { EditorColumn, FieldCandidate, FieldId, InvoiceDocument, OCRToken, RawExtraction, SupportedMime } from "./types";
 
-export interface FixtureInvoice {
-  document: InvoiceDocument;
-  tokens: OCRToken[];
-  candidates: FieldCandidate[];
-}
+type Line = { label: string; value: string; field?: FieldId; score?: number };
+type Extra = { text: string; field?: FieldId; score?: number };
 
-let n = 0;
-const tok = (documentId: string, text: string, x: number, y: number, w = 120, confidence = 0.9): OCRToken => ({
-  id: `${documentId}-t${++n}`,
-  documentId,
-  page: 1,
-  text,
-  bbox: { x, y, width: w, height: 14 },
-  confidence,
-});
+const PAGE = { width: 600, height: 800 };
 
-function build(
-  id: string,
-  name: string,
-  values: Partial<Record<FieldId, string>>,
-  extra: string[] = [],
-): FixtureInvoice {
+function buildDoc(id: string, name: string, mime: SupportedMime, lines: Line[], extras: Extra[] = []) {
   const tokens: OCRToken[] = [];
   const candidates: FieldCandidate[] = [];
-  let y = 40;
-  for (const [fieldId, value] of Object.entries(values) as [FieldId, string][]) {
-    const t = tok(id, value, 260, y);
-    tokens.push(tok(id, `${fieldId}:`, 40, y, 180), t);
-    candidates.push({ fieldId, tokenIds: [t.id], value, score: 0.8, reasons: ["fixture"] });
-    y += 28;
+  let n = 0;
+  const mk = (text: string, x: number, y: number, w: number, confidence: number): OCRToken => ({
+    id: `${id}-t${++n}`,
+    documentId: id,
+    page: 1,
+    text,
+    bbox: { x, y, width: w, height: 18 },
+    confidence,
+  });
+  let y = 60;
+  for (const l of lines) {
+    tokens.push(mk(l.label, 40, y, 200, 0.95));
+    const v = mk(l.value, 260, y, Math.min(300, 20 + l.value.length * 9), 0.9);
+    tokens.push(v);
+    if (l.field) candidates.push({ fieldId: l.field, tokenIds: [v.id], value: l.value, score: l.score ?? 0.9, reasons: ["label_match"] });
+    y += 34;
   }
-  for (const text of extra) {
-    tokens.push(tok(id, text, 40, y, 200, 0.7));
-    y += 28;
+  y += 20;
+  for (const e of extras) {
+    const t = mk(e.text, 40, y, Math.min(400, 20 + e.text.length * 9), 0.7);
+    tokens.push(t);
+    if (e.field) candidates.push({ fieldId: e.field, tokenIds: [t.id], value: e.text, score: e.score ?? 0.5, reasons: ["value_shape"] });
+    y += 34;
   }
-  return { document: { id, name, mime: "application/pdf", pages: 1, status: "ready" }, tokens, candidates };
+  const document: InvoiceDocument = { id, name, mime, pages: 1, pageSize: PAGE, status: "ready" };
+  return { document, tokens, candidates };
 }
 
-export const FIXTURE_INVOICES: FixtureInvoice[] = [
-  build("doc-a", "hoa-don-0001234.pdf", {
-    invoice_number: "0001234",
-    invoice_date: "2026-10-03",
-    invoice_series: "1C26TAA",
-    seller_name: "Công ty TNHH Minh Phát",
-    seller_tax_id: "0101234567",
-    buyer_name: "Công ty CP Sao Mai",
-    buyer_tax_id: "0309876543",
-    subtotal: "10000000",
-    vat_amount: "800000",
-    total_amount: "10800000",
-    currency: "VND",
-  }),
-  build("doc-b", "invoice_000987.pdf", {
-    invoice_number: "000987",
-    invoice_date: "2026-10-11",
-    seller_name: "Công ty TNHH Minh Phát",
-    seller_tax_id: "0101234567",
-    buyer_tax_id: "0312345678",
-    subtotal: "2500000",
-    vat_amount: "250000",
-    total_amount: "2750000",
-    currency: "VND",
-  }, ["0312345678-001"]),
-  // Deliberately incomplete: no VAT, ambiguous tax ID candidates — for review-flag tests.
-  build("doc-c", "scan_hd_55.jpg", {
-    invoice_number: "0000055",
-    seller_name: "Hộ kinh doanh Lan Anh",
-    seller_tax_id: "8012345678",
-    total_amount: "1650000",
-  }, ["0109998887", "1500000"]),
+const docs = [
+  buildDoc("doc-a", "hoa-don-0001234.pdf", "application/pdf", [
+    { label: "Số hóa đơn:", value: "0001234", field: "invoice_number" },
+    { label: "Ngày:", value: "2026-10-03", field: "invoice_date" },
+    { label: "Ký hiệu:", value: "1C26TAA", field: "invoice_series" },
+    { label: "Đơn vị bán hàng:", value: "Công ty TNHH Minh Phát", field: "seller_name" },
+    { label: "Mã số thuế:", value: "0101234567", field: "seller_tax_id" },
+    { label: "Địa chỉ:", value: "12 Lê Lợi, Q.1, TP.HCM", field: "seller_address" },
+    { label: "Người mua hàng:", value: "Công ty CP Sao Mai", field: "buyer_name" },
+    { label: "MST người mua:", value: "0309876543", field: "buyer_tax_id" },
+    { label: "Cộng tiền hàng:", value: "10000000", field: "subtotal" },
+    { label: "Tiền thuế GTGT:", value: "800000", field: "vat_amount" },
+    { label: "Tổng thanh toán:", value: "10800000", field: "total_amount" },
+    { label: "Loại tiền:", value: "VND", field: "currency" },
+  ], [{ text: "8%" }]),
+  buildDoc("doc-b", "invoice_000987.pdf", "application/pdf", [
+    { label: "Invoice No.:", value: "000987", field: "invoice_number" },
+    { label: "Date:", value: "2026-10-11", field: "invoice_date" },
+    { label: "Seller:", value: "Công ty TNHH Minh Phát", field: "seller_name" },
+    { label: "Tax code:", value: "0101234567", field: "seller_tax_id" },
+    { label: "Buyer tax code:", value: "0312345678", field: "buyer_tax_id", score: 0.85 },
+    { label: "Sub total:", value: "2500000", field: "subtotal" },
+    { label: "VAT (10%):", value: "250000", field: "vat_amount" },
+    { label: "Total:", value: "2750000", field: "total_amount" },
+    { label: "Currency:", value: "VND", field: "currency" },
+  ], [{ text: "0312345678-001", field: "buyer_tax_id", score: 0.6 }]),
+  // Deliberately incomplete/ambiguous: no date, two near-equal tax ID candidates.
+  buildDoc("doc-c", "scan_hd_55.jpg", "image/jpeg", [
+    { label: "Số:", value: "0000055", field: "invoice_number" },
+    { label: "Hộ kinh doanh:", value: "Hộ kinh doanh Lan Anh", field: "seller_name" },
+    { label: "MST:", value: "8012345678", field: "seller_tax_id", score: 0.66 },
+    { label: "Tổng cộng:", value: "1650000", field: "total_amount" },
+  ], [
+    { text: "0109998887", field: "seller_tax_id", score: 0.6 },
+    { text: "1500000", field: "subtotal", score: 0.5 },
+  ]),
 ];
 
-export const DEFAULT_COLUMNS: ExportColumn[] = (
-  ["invoice_number", "invoice_date", "seller_name", "seller_tax_id", "total_amount", "source_filename"] as FieldId[]
-).map((fieldId, order) => ({ id: `col-${fieldId}`, fieldId, header: fieldId, order }));
+export const FIXTURE_RAW: RawExtraction = {
+  documents: docs.map((d) => d.document),
+  tokens: docs.flatMap((d) => d.tokens),
+  candidates: Object.fromEntries(docs.map((d) => [d.document.id, d.candidates])),
+};
 
-export function fixtureCell(inv: FixtureInvoice, col: ExportColumn): Cell {
-  if (col.fieldId === "source_filename") {
-    return { documentId: inv.document.id, columnId: col.id, fieldId: col.fieldId, value: inv.document.name, sourceTokenIds: [], provenance: "extracted", reviewState: "confirmed", flags: [] };
-  }
-  const c = inv.candidates.find((x) => x.fieldId === col.fieldId);
-  return {
-    documentId: inv.document.id,
-    columnId: col.id,
-    fieldId: col.fieldId,
-    value: c?.value ?? "",
-    sourceTokenIds: c?.tokenIds ?? [],
-    provenance: "extracted",
-    reviewState: c ? "unreviewed" : "needs_review",
-    flags: c ? [] : ["missing"],
-  };
-}
+export const DEFAULT_COLUMN_FIELDS: FieldId[] = [
+  "invoice_number",
+  "invoice_date",
+  "seller_name",
+  "seller_tax_id",
+  "total_amount",
+  "source_filename",
+];
+
+export const DEFAULT_COLUMNS: EditorColumn[] = DEFAULT_COLUMN_FIELDS.map((fieldId) => ({ id: `col-${fieldId}`, fieldId }));

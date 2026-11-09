@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useI18n, translate } from "../i18n";
 import { AppHeader } from "../components/shell/AppHeader";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   const { t } = useI18n();
@@ -137,6 +138,7 @@ function RootComponent() {
       <main id="main">
         <Outlet />
       </main>
+      <Toaster position="bottom-right" />
     </QueryClientProvider>
   );
 }
