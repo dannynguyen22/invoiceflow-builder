@@ -61,7 +61,7 @@ Verified/confirmed, hand-typed and document-assigned (OCR-drop) cells are never 
 Both dialogs show: what was learned; scope with explanation and in/out-of-scope counts; per-row before → after, reasons (localized, machine-readable codes), source page + printed line (or XML path); groups "ready" (pre-selected) / "needs review" (not pre-selected) / "protected" (hidden until an override switch is turned on, never pre-selected, explicit confirmation dialog). Rows that already hold the proposed value are counted, not listed.
 
 ### 4. Account + cloud templates (`src/cloud`, `docs/cloud-sync`, `docs/CLOUD_SETUP.md`)
-Optional Google sign-in (Supabase Auth, PKCE) and templates synced to the user's account; guests unchanged. Per-user access is enforced by Postgres RLS (`export_templates`, RLS forced, `anon` revoked, owner immutable, 100-row cap, CHECK constraints); the client never sends `user_id`, validates everything sent/received, and refuses service-role keys. Templates now also **apply** their stored column order/headers at export time. Nothing is uploaded unless the user signs in and chooses to sync. Lovable block in `AGENTS.md` reviewed (findings in `docs/CLOUD_SETUP.md`), left untouched; project rules added below it.
+Optional Google sign-in (Supabase Auth, PKCE) and templates synced to the user's account; guests unchanged. Per-user access is enforced by Postgres RLS (`export_templates`, RLS forced, `anon` revoked, owner immutable, 100-row cap, CHECK constraints); the client never sends `user_id`, validates everything sent/received, and refuses service-role keys. Templates now also **apply** their stored column order/headers at export time. Nothing is uploaded unless the user signs in and chooses to sync. (Schema is kept under `docs/cloud-sync/` for manual application to the project's own Supabase instance.)
 
 ### 5. Browser review: findings and fixes
 | Finding | Fix |
@@ -165,13 +165,14 @@ Checked and fine: Vietnamese wording and diacritics in dialogs/menus, popovers, 
 ## Known blockers / deferred (documented per task constraints)
 
 ### Google OAuth + Supabase-RLS template sync (PRD §10, Phase 5) — IMPLEMENTED, awaiting credentials
-Built in the review-fix pass (see above and `docs/CLOUD_SETUP.md`). The earlier blocker ("AGENTS.md reserves the database for Lovable") was resolved by keeping the schema under `docs/cloud-sync/` for manual application to the project's own Supabase instance, and by reviewing the Lovable block (not edited). What still needs you: create the Supabase project, apply the SQL, create the Google OAuth client, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+Built in the review-fix pass (see above and `docs/CLOUD_SETUP.md`). The schema is kept under `docs/cloud-sync/` for manual application to the project's own Supabase instance. What still needs you: create the Supabase project, apply the SQL, create the Google OAuth client, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
 ### Dependency audit — not auto-fixed
 `npm audit` reports 9 vulns (7 moderate, 2 high) entirely in dev dependencies (eslint toolchain, vite dev
 server, zod). Per task constraints `npm audit fix --force` was NOT run (it would pull breaking major versions
 of vite/zod outside the stated ranges). None affect the shipped client bundle's runtime behaviour; the vite
 advisories concern the local dev server only.
+- 2026-11-09: Removed the Lovable dependency; the project is now independent. Replaced `@lovable.dev/vite-tanstack-config` with a self-maintained Vite + TanStack Start config in `config/vite-tanstack.ts` (same plugin order, SSR server entry wiring, VITE_* env injection, `@`→`src` alias, React/TanStack dedupe, Cloudflare `cloudflare-module` Nitro target). Added `@tanstack/devtools-vite` and `lightningcss` as explicit devDependencies (previously transitive). Renamed `src/lib/lovable-error-reporting.ts` → `src/lib/error-reporting.ts` (`reportRuntimeError`, vendor-neutral host hooks), removed the `@Lovable` twitter:site meta, and de-branded comments. Removed the `LOVABLE:BEGIN/END` block from `AGENTS.md` and cleared the Lovable exclusions in `bunfig.toml`. SSR, routing, Tailwind, Nitro output and bilingual support preserved. 190 tests, tsc, and production build all pass.
 - 2026-11-09: Phase 6 QA pass. Behavioral review (semantic_reviewer) surfaced two issues, both fixed:
   (a) CSV formula guard corrupted negative amounts — now plain numbers bypass the guard;
   (b) smart ops now defensively enforce candidate token-ownership. Privacy/network audit: no outbound

@@ -83,22 +83,13 @@ Browser (publishable key only)  ──HTTPS + user JWT──▶  Supabase Auth (
 * Nothing is uploaded automatically. A device template reaches the account only when the user saves with
   sync on or presses *Đưa lên tài khoản*.
 
-## Review of the Lovable block in `AGENTS.md`
+## Supabase project ownership
 
-The block between `LOVABLE:BEGIN/END` is maintained by Lovable and was **not edited**. Findings:
-
-| Line | Still needed? | Notes |
-|---|---|---|
-| Do not rewrite published git history | **Yes** while the repo is connected to Lovable | Pushes to the connected branch sync into Lovable. |
-| Database: do not add/edit `supabase/migrations/` or `drizzle/` | Only matters if Lovable Cloud is the database | This project uses its own Supabase project; the schema is in `docs/cloud-sync/` so the rule is respected. If you want a normal Supabase CLI layout, move the file and delete this rule. |
-| Generated files (e.g. `src/routeTree.gen.ts`) | Yes | Unrelated to this work. |
-| AI gateway / `LOVABLE_API_KEY` | Not used by this app | Harmless. |
-| Connectors | Not used by this app | Harmless. |
-| Secrets managed by Lovable; none in the repo | Compatible | We keep no secrets in the repo either. |
-
-`vite.config.ts` depends on `@lovable.dev/vite-tanstack-config` for the build, so the Lovable packages
-are **not** removable without replacing the Vite configuration. Disconnecting from Lovable entirely is a
-separate decision for the project owner.
+This project uses **your own** Supabase project, not a managed backend. The schema
+and row-level-security policies live in `docs/cloud-sync/schema.sql` and are applied
+manually (see above / `scripts/verify-cloud-rls.sh`). There is no external platform
+that owns the database, secrets, or migrations — manage them directly here. If you
+prefer a standard Supabase CLI layout, move the schema into `supabase/migrations/`.
 
 ## Not verified here
 

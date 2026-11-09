@@ -1,33 +1,20 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
+# InvoiceFlow — agent guide
 
-## What Lovable manages
+This project is an independent Vite + TanStack Start application (SSR, deployed to
+Cloudflare Workers via Nitro). It is no longer connected to Lovable; there is no
+external editor that syncs commits, no managed database, and no AI gateway. Manage
+the schema, secrets, and dependencies directly in this repository.
 
-Rules outside this block are the project's own. Change the pieces below in
-Lovable, not by hand. With the [Lovable MCP](https://mcp.lovable.dev)
-connected, `send_message` asks Lovable to do it; otherwise ask the user to
-use the editor.
-
-- **Database.** Do not add or edit `supabase/migrations/` or `drizzle/`.
-  Ask Lovable to change the schema.
-- **Generated files.** Do not edit a file whose header says it is automatically
-  generated.
-- **AI gateway.** Keep model calls on Lovable's gateway, and keep
-  `LOVABLE_API_KEY` out of browser code.
-- **Connectors.** Lovable provides native connectors. `list_connectors` shows
-  which are enabled; `add_connector` only returns the dashboard link. When a
-  connector is enabled, calls go through the connector gateway and need
-  `LOVABLE_API_KEY`. When Lovable does not provide one, users can bring their
-  own key and store it in Secrets.
-- **Secrets.** Lovable manages them. Do not put secret values in the repo.
-<!-- LOVABLE:END -->
+## Build & deploy configuration
+- The Vite config lives in `vite.config.ts` and delegates to the self-maintained
+  helper in `config/vite-tanstack.ts` (plugin order, SSR wiring, env injection,
+  Cloudflare Nitro target). This replaced the former
+  `@lovable.dev/vite-tanstack-config` package — keep the config here, in-repo.
+- Production builds output to `.output/` with Nitro's `cloudflare-module` preset;
+  `.output/server/wrangler.json` drives the Cloudflare Workers deploy.
+- Never set `ssr.external` / `resolve.external` (the Worker has no runtime module
+  resolution) and never add response compression (the edge compresses already).
+- This project uses `bun` and tracks `bun.lock`; `package-lock.json` is ignored.
 
 ## Project rules (InvoiceFlow)
 - The PRD (InvoiceFlow PRD & Engineering Plan v1) is the source of truth; build phase by phase and stop for approval after each.
@@ -46,5 +33,5 @@ use the editor.
 - XML input is refused if it contains DOCTYPE/ENTITY and is matched by localName; why: no entity expansion, namespace-agnostic.
 - PDF/OCR field matching is deterministic in src/extraction/matching.ts (lines → label segments → exact/fuzzy labels → seller/buyer section → format-checked values → line-below fallback → shape-only alternatives); why: explainable, testable, no AI; tests replay real pipeline output saved in src/test/samples/real-extraction.json.
 - Editor panel sizes persist via react-resizable-panels useDefaultLayout (localStorage) and panels render only after hydration; why: avoids SSR layout mismatch.
-- Optional cloud layer lives in src/cloud (Supabase Auth + Google, PKCE; templates in table export_templates). The browser holds only the public key; per-user access is enforced by row-level security in docs/cloud-sync/schema.sql, never by UI filtering. The client never sends user_id, never stores invoice content, and refuses service-role keys. Setup and the review of the Lovable block: docs/CLOUD_SETUP.md; run scripts/verify-cloud-rls.sh after any schema change.
+- Optional cloud layer lives in src/cloud (Supabase Auth + Google, PKCE; templates in table export_templates). The browser holds only the public key; per-user access is enforced by row-level security in docs/cloud-sync/schema.sql, never by UI filtering. The client never sends user_id, never stores invoice content, and refuses service-role keys. Setup: docs/CLOUD_SETUP.md; run scripts/verify-cloud-rls.sh after any schema change.
 - Smart Auto-fill/Batch Correction: protected cells (verified, hand-typed, document-assigned) change only through an explicit `overrideProtected: { confirmed: true, documentIds }`; the UI must show a confirmation before passing it. Learning (label, relative geometry, section, shape, layout signature, XML path) lives in src/editor/learning.ts; proposals always carry reasons and a source reference.
