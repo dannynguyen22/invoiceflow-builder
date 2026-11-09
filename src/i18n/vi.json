@@ -125,8 +125,10 @@
     "duplicateMenuHint": "Đã có trong bảng",
     "addDuplicateColumn": "Thêm cột trùng",
     "realDataNotice": "Dữ liệu được đọc ngay trên trình duyệt từ {{count}} file bạn đã tải lên.",
-    "noCandidatesYet": "Ô chưa được điền sẵn với PDF và ảnh: hãy kéo văn bản từ hóa đơn gốc vào ô. Gợi ý tự động sẽ có ở bản cập nhật tới.",
-    "backToUpload": "Tải thêm hóa đơn"
+    "noCandidatesYet": "Ô được điền sẵn khi khớp chắc chắn; ô trống hoặc tô vàng cần bạn kiểm tra.",
+    "backToUpload": "Tải thêm hóa đơn",
+    "toggleCandidates": "Ẩn/hiện bảng giá trị đề xuất",
+    "keyPicker": "Mở giá trị đề xuất"
   },
   "fieldGroups": {
     "invoice": "Hóa đơn",
@@ -254,5 +256,28 @@
       "ocr_failed": "Nhận dạng chữ thất bại.",
       "unknown": "Đã có lỗi khi xử lý file."
     }
+  },
+  "picker": {
+    "title": "Giá trị đề xuất cho {{field}}",
+    "close": "Đóng",
+    "inUse": "Đang dùng",
+    "showAll": "Xem tất cả giá trị",
+    "editManually": "Sửa thủ công (F2)",
+    "reason": {
+      "label": "Khớp nhãn",
+      "below": "Dưới nhãn",
+      "shape": "Theo định dạng",
+      "xml": "Từ file XML"
+    }
+  },
+  "tips": {
+    "title": "Hướng dẫn nhanh",
+    "click": "Nhấp vào ô để xem giá trị đề xuất.",
+    "dblclick": "Nhấp đúp (hoặc F2) để sửa tay.",
+    "dragHeader": "Kéo trường vào tiêu đề cột để đổi trường, dữ liệu được giữ nguyên.",
+    "dragAdd": "Kéo trường vào “Thêm cột” để tạo cột mới.",
+    "dragToken": "Kéo văn bản trên hóa đơn gốc vào ô để gán giá trị.",
+    "dismiss": "Ẩn hướng dẫn",
+    "show": "Hiện hướng dẫn"
   }
 }

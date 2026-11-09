@@ -84,6 +84,8 @@ export interface FieldCandidate {
   /** Heuristic ranking score, not a probability. */
   score: number;
   reasons: string[];
+  /** Source line text around the value (for review UI); raw document text only. */
+  context?: string;
 }
 export interface RawExtraction {
   readonly documents: readonly InvoiceDocument[];

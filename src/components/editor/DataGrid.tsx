@@ -31,13 +31,24 @@ interface Props {
   onAddColumn: (fieldId: FieldId) => void;
   onMoveColumn: (columnId: string, toIndex: number) => void;
   onDropToken: (documentId: string, columnId: string, tokenId: string) => void;
+  /** Open the candidate picker for the selected cell (single click, Space, Alt+↓). */
+  onOpenPicker?: (anchor: HTMLElement) => void;
 }
+
+/** Delay before a single click opens the picker, so a double click can cancel it. */
+export const PICKER_CLICK_DELAY = 220;
 
 export function DataGrid(p: Props) {
   const { t, formatNumber } = useI18n();
   const { columns, cells } = p.state;
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelClick = () => {
+    if (clickTimer.current) clearTimeout(clickTimer.current);
+    clickTimer.current = null;
+  };
+  useEffect(() => cancelClick, []);
 
   // Keep keyboard focus on the selected cell.
   useEffect(() => {
@@ -68,9 +79,13 @@ export function DataGrid(p: Props) {
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (p.editing) return;
     const map: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
-    if (map[e.key]) {
+    if (map[e.key] && !e.altKey) {
       e.preventDefault();
       move(...map[e.key]!);
+    } else if ((e.key === " " || (e.key === "ArrowDown" && e.altKey)) && p.selection && p.onOpenPicker) {
+      e.preventDefault();
+      const el = e.target as HTMLElement;
+      if (el.dataset["cell"]) p.onOpenPicker(el);
     } else if ((e.key === "F2" || e.key === "Enter") && p.selection) {
       e.preventDefault();
       p.onStartEdit();
@@ -214,8 +229,15 @@ export function DataGrid(p: Props) {
                   aria-selected={selected}
                   tabIndex={selected || (!p.selection && r === 0 && col === columns[0]) ? 0 : -1}
                   title={cell.flags.map((f) => t(`flags.${f}`)).join(" · ") || t(`review.${cell.reviewState}`)}
-                  onClick={() => p.onSelect({ documentId: doc.id, columnId: col.id })}
+                  onClick={(e) => {
+                    p.onSelect({ documentId: doc.id, columnId: col.id });
+                    cancelClick();
+                    if (e.detail > 1 || !p.onOpenPicker || (selected && p.editing)) return;
+                    const el = e.currentTarget;
+                    clickTimer.current = setTimeout(() => p.onOpenPicker?.(el), PICKER_CLICK_DELAY);
+                  }}
                   onDoubleClick={() => {
+                    cancelClick();
                     p.onSelect({ documentId: doc.id, columnId: col.id });
                     p.onStartEdit();
                   }}

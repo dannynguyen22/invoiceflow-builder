@@ -125,8 +125,10 @@
     "duplicateMenuHint": "Already in the table",
     "addDuplicateColumn": "Add duplicate column",
     "realDataNotice": "Data read in your browser from the {{count}} files you uploaded.",
-    "noCandidatesYet": "PDF and image cells aren't pre-filled yet: drag text from the original invoice into a cell. Automatic suggestions arrive in the next update.",
-    "backToUpload": "Upload more invoices"
+    "noCandidatesYet": "Cells are pre-filled only for confident matches; empty or amber cells need your review.",
+    "backToUpload": "Upload more invoices",
+    "toggleCandidates": "Show/hide suggestions panel",
+    "keyPicker": "Open suggested values"
   },
   "fieldGroups": {
     "invoice": "Invoice",
@@ -254,5 +256,28 @@
       "ocr_failed": "Text recognition failed.",
       "unknown": "Something went wrong processing this file."
     }
+  },
+  "picker": {
+    "title": "Suggested values for {{field}}",
+    "close": "Close",
+    "inUse": "In use",
+    "showAll": "See all values",
+    "editManually": "Edit manually (F2)",
+    "reason": {
+      "label": "Label match",
+      "below": "Below label",
+      "shape": "By format",
+      "xml": "From XML file"
+    }
+  },
+  "tips": {
+    "title": "Quick tips",
+    "click": "Click a cell to see suggested values.",
+    "dblclick": "Double-click (or F2) to edit manually.",
+    "dragHeader": "Drag a field onto a column header to change its field; values are kept.",
+    "dragAdd": "Drag a field onto “Add column” to create a column.",
+    "dragToken": "Drag text from the original invoice into a cell to assign it.",
+    "dismiss": "Hide tips",
+    "show": "Show tips"
   }
 }

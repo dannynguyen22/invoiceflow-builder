@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n";
 
 const ROWS: [string, string][] = [
   ["← ↑ → ↓ / Tab", "editor.keyNavigate"],
+  ["Space / Alt + ↓", "editor.keyPicker"],
   ["F2 / Enter", "editor.keyEdit"],
   ["Enter", "editor.keyCommit"],
   ["Esc", "editor.keyCancel"],

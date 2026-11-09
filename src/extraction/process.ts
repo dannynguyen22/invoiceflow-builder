@@ -2,6 +2,7 @@
 import type { FieldCandidate, InvoiceDocument, OCRToken } from "@/domain/types";
 import { ExtractionError, type ExtractionIssue } from "./errors";
 import { verifyContent } from "./files";
+import { matchFields } from "./matching";
 
 export type Stage = "reading" | "parsing" | "loading_ocr" | "ocr";
 
@@ -47,7 +48,7 @@ export const processFile: Processor = async (file, documentId, onProgress) => {
     return {
       document: { ...base, pages: r.pageSizes.length, pageSizes: r.pageSizes, source: r.ocrPages.length ? "ocr" : "pdf_text" },
       tokens: r.tokens,
-      candidates: [],
+      candidates: matchFields(r.tokens),
       pageImages: r.pageImages,
       issues,
     };
@@ -68,7 +69,7 @@ export const processFile: Processor = async (file, documentId, onProgress) => {
   return {
     document: { ...base, pages: 1, pageSizes: [size], source: "ocr" },
     tokens,
-    candidates: [],
+    candidates: matchFields(tokens),
     pageImages: [URL.createObjectURL(blob)],
     issues: tokens.length ? ["ocr_used"] : ["ocr_used", "no_text_found"],
   };

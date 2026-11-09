@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { Info, PanelRight, Redo2, Undo2, Upload } from "lucide-react";
+import { createFileRoute, Link, useHydrated } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Info, Lightbulb, PanelLeft, PanelRight, Redo2, Undo2, Upload } from "lucide-react";
+import { useDefaultLayout, usePanelRef } from "react-resizable-panels";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -11,6 +11,8 @@ import { FieldsPanel } from "@/components/editor/FieldsPanel";
 import { CandidatePanel } from "@/components/editor/CandidatePanel";
 import { DocumentPreview } from "@/components/editor/DocumentPreview";
 import { KeyboardHelp } from "@/components/editor/KeyboardHelp";
+import { CellPicker } from "@/components/editor/CellPicker";
+import { EditorTips, useTipsDismissed } from "@/components/editor/EditorTips";
 import { DEFAULT_COLUMNS, FIXTURE_RAW } from "@/domain/fixtures";
 import type { FieldId, RawExtraction } from "@/domain/types";
 import { buildRaw } from "@/extraction/store";
@@ -62,6 +64,19 @@ function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSampl
   const { state, run, undo, redo } = useEditor(raw, DEFAULT_COLUMNS);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [editing, setEditing] = useState(false);
+  const [pickerAnchor, setPickerAnchor] = useState<HTMLElement | null>(null);
+  const [previewOverride, setPreviewOverride] = useState<string[] | null>(null);
+  const [tipsDismissed, setTipsDismissed] = useTipsDismissed();
+  const candidatesPanel = usePanelRef();
+  const [candidatesCollapsed, setCandidatesCollapsed] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const closePicker = useCallback(() => {
+    setPickerAnchor((a) => {
+      a?.focus();
+      return null;
+    });
+    setPreviewOverride(null);
+  }, []);
 
   const report = useCallback(
     (r: CommandResult, success?: string) => {
@@ -153,8 +168,21 @@ function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSampl
     />
   );
 
+  const showAllCandidates = () => {
+    closePicker();
+    if (candidatesPanel.current?.isCollapsed()) candidatesPanel.current.expand();
+    requestAnimationFrame(() => searchRef.current?.focus());
+  };
+  const toggleCandidates = () => {
+    const p = candidatesPanel.current;
+    if (!p) return;
+    if (p.isCollapsed()) p.expand();
+    else p.collapse();
+  };
+  const highlighted = new Set(previewOverride ?? selectedCell?.sourceTokenIds ?? []);
+
   return (
-    <div className="flex h-[calc(100vh-3rem)] flex-col">
+    <div className="flex h-[calc(100dvh-3rem)] flex-col">
       <div role="toolbar" aria-label={t("editor.toolbarLabel")} className="flex items-center gap-2 border-b bg-paper px-3 py-1.5">
         {isSample ? (
           <div className="flex min-w-0 flex-1 items-center gap-2 rounded bg-review/15 px-2 py-1 text-xs text-review-foreground" title={t("editor.fixtureNotice")}>
@@ -169,18 +197,34 @@ function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSampl
             </span>
           </div>
         )}
+        <span className="hidden text-xs text-muted-foreground sm:inline">{t("editor.invoiceCount", { count: raw.documents.length })}</span>
         <Button size="sm" variant="outline" className="h-7 px-2" asChild>
           <Link to="/workspace" title={t("editor.backToUpload")} aria-label={t("editor.backToUpload")}>
             <Upload aria-hidden />
           </Link>
         </Button>
-        <span className="hidden text-xs text-muted-foreground sm:inline">{t("editor.invoiceCount", { count: raw.documents.length })}</span>
         <Button size="sm" variant="outline" className="h-7 px-2" onClick={doUndo} disabled={!state.past.length} aria-label={t("editor.undo")} title={t("editor.undo")}>
           <Undo2 aria-hidden />
         </Button>
         <Button size="sm" variant="outline" className="h-7 px-2" onClick={doRedo} disabled={!state.future.length} aria-label={t("editor.redo")} title={t("editor.redo")}>
           <Redo2 aria-hidden />
         </Button>
+        <Button
+          size="sm"
+          variant={candidatesCollapsed ? "outline" : "secondary"}
+          className="hidden h-7 px-2 md:inline-flex"
+          onClick={toggleCandidates}
+          aria-pressed={!candidatesCollapsed}
+          aria-label={t("editor.toggleCandidates")}
+          title={t("editor.toggleCandidates")}
+        >
+          <PanelLeft aria-hidden />
+        </Button>
+        {tipsDismissed && (
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setTipsDismissed(false)} aria-label={t("tips.show")} title={t("tips.show")}>
+            <Lightbulb aria-hidden />
+          </Button>
+        )}
         <KeyboardHelp />
         <Sheet>
           <SheetTrigger asChild>
@@ -194,10 +238,13 @@ function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSampl
           </SheetContent>
         </Sheet>
       </div>
+      {!tipsDismissed && <EditorTips onDismiss={() => setTipsDismissed(true)} />}
 
       <div className="flex min-h-0 flex-1">
-        <ResizablePanelGroup orientation="vertical" className="min-w-0 flex-1">
-          <ResizablePanel defaultSize="55%" minSize="20%">
+        <EditorPanels
+          collapsedRef={candidatesPanel}
+          onCandidatesCollapsed={setCandidatesCollapsed}
+          grid={
             <section aria-label={t("editor.gridRegion")} className="h-full overflow-auto bg-paper">
               <DataGrid
                 documents={raw.documents}
@@ -207,8 +254,14 @@ function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSampl
                 onSelect={(s) => {
                   setSelection(s);
                   setEditing(false);
+                  if (pickerAnchor && (s.documentId !== selection?.documentId || s.columnId !== selection?.columnId)) closePicker();
                 }}
-                onStartEdit={() => setEditing(true)}
+                onOpenPicker={(el) => setPickerAnchor(el)}
+                onStartEdit={() => {
+                  setPickerAnchor(null);
+                  setPreviewOverride(null);
+                  setEditing(true);
+                }}
                 onCommitEdit={(v) => {
                   setEditing(false);
                   if (selection) report(run((s) => editCell(s, selection.documentId, selection.columnId, v)));
@@ -220,42 +273,118 @@ function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSampl
                 onDropToken={onDropToken}
               />
             </section>
-          </ResizablePanel>
-          <ResizableHandle withHandle className="h-1.5 w-full cursor-row-resize bg-border hover:bg-primary/30" />
-          <ResizablePanel defaultSize="45%" minSize="15%">
-            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] bg-background md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] md:grid-rows-1">
-              <section aria-label={t("editor.candidatesTitle")} className="min-h-0 border-b bg-paper md:border-b-0 md:border-r">
-                <CandidatePanel
-                  key={selection ? cellKey(selection.documentId, selection.columnId) : "none"}
-                  cell={selectedCell}
-                  columnField={selectedColumn?.fieldId ?? null}
-                  candidates={candidates}
-                  tokens={previewTokens}
-                  onChooseCandidate={(c) => selection && report(run((s) => chooseCandidate(s, raw, selection.documentId, selection.columnId, c)))}
-                  onToggleVerified={(v) =>
-                    selection && report(run((s) => setVerified(s, selection.documentId, selection.columnId, v)), t(v ? "editor.verified" : "editor.unverifiedToast"))
-                  }
-                  onChooseToken={(id) => selection && onDropToken(selection.documentId, selection.columnId, id)}
-                  onEdit={() => setEditing(true)}
-                />
-              </section>
-              <section aria-label={t("editor.previewRegion")} className="min-h-0 min-w-0">
-                <DocumentPreview
-                  document={previewDoc}
-                  tokens={previewTokens}
-                  pageImages={previewDocId ? pageImages[previewDocId] : undefined}
-                  highlighted={new Set(selectedCell?.sourceTokenIds ?? [])}
-                  canAssign={!!selection}
-                  onTokenClick={(id) => selection && onDropToken(selection.documentId, selection.columnId, id)}
-                />
-              </section>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-        <aside aria-label={t("editor.fieldsRegion")} className="hidden w-64 shrink-0 border-l bg-sidebar lg:block">
+          }
+          candidates={
+            <section aria-label={t("editor.candidatesTitle")} className="h-full min-h-0 bg-paper">
+              <CandidatePanel
+                key={selection ? cellKey(selection.documentId, selection.columnId) : "none"}
+                cell={selectedCell}
+                columnField={selectedColumn?.fieldId ?? null}
+                candidates={candidates}
+                tokens={previewTokens}
+                searchRef={searchRef}
+                onChooseCandidate={(c) => selection && report(run((s) => chooseCandidate(s, raw, selection.documentId, selection.columnId, c)))}
+                onToggleVerified={(v) =>
+                  selection && report(run((s) => setVerified(s, selection.documentId, selection.columnId, v)), t(v ? "editor.verified" : "editor.unverifiedToast"))
+                }
+                onChooseToken={(id) => selection && onDropToken(selection.documentId, selection.columnId, id)}
+                onEdit={() => setEditing(true)}
+              />
+            </section>
+          }
+          preview={
+            <section aria-label={t("editor.previewRegion")} className="h-full min-h-0 min-w-0 bg-background">
+              <DocumentPreview
+                document={previewDoc}
+                tokens={previewTokens}
+                pageImages={previewDocId ? pageImages[previewDocId] : undefined}
+                highlighted={highlighted}
+                canAssign={!!selection}
+                onTokenClick={(id) => selection && onDropToken(selection.documentId, selection.columnId, id)}
+              />
+            </section>
+          }
+        />
+        <aside aria-label={t("editor.fieldsRegion")} className="hidden w-60 shrink-0 border-l bg-sidebar lg:block">
           {fieldsPanel}
         </aside>
       </div>
+
+      {pickerAnchor && selectedCell && selectedColumn && !editing && (
+        <CellPicker
+          key={cellKey(selectedCell.documentId, selectedCell.columnId)}
+          anchor={pickerAnchor}
+          cell={selectedCell}
+          columnField={selectedColumn.fieldId}
+          candidates={candidates}
+          onPreview={setPreviewOverride}
+          onChoose={(c) => {
+            if (selection) report(run((s) => chooseCandidate(s, raw, selection.documentId, selection.columnId, c)));
+            closePicker();
+          }}
+          onShowAll={showAllCandidates}
+          onEdit={() => {
+            setPickerAnchor(null);
+            setPreviewOverride(null);
+            setEditing(true);
+          }}
+          onClose={closePicker}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Resizable editor regions. Sizes and the collapsed state of the suggestions panel are
+ * remembered in localStorage; rendered only after hydration so SSR markup never mismatches.
+ */
+const memoryStorage = { getItem: () => null, setItem: () => {} };
+const layoutStorage = typeof window === "undefined" ? memoryStorage : window.localStorage;
+
+function EditorPanels({
+  grid,
+  candidates,
+  preview,
+  collapsedRef,
+  onCandidatesCollapsed,
+}: {
+  grid: React.ReactNode;
+  candidates: React.ReactNode;
+  preview: React.ReactNode;
+  collapsedRef: ReturnType<typeof usePanelRef>;
+  onCandidatesCollapsed: (v: boolean) => void;
+}) {
+  const hydrated = useHydrated();
+  const vertical = useDefaultLayout({ id: "invoiceflow-editor-v", storage: layoutStorage });
+  const horizontal = useDefaultLayout({ id: "invoiceflow-editor-h", storage: layoutStorage });
+  if (!hydrated) return <div className="min-w-0 flex-1">{grid}</div>;
+  return (
+    <ResizablePanelGroup orientation="vertical" className="min-w-0 flex-1" defaultLayout={vertical.defaultLayout} onLayoutChanged={vertical.onLayoutChanged}>
+      <ResizablePanel id="grid" defaultSize="62%" minSize="25%">
+        {grid}
+      </ResizablePanel>
+      <ResizableHandle withHandle className="h-1.5 w-full cursor-row-resize bg-border hover:bg-primary/30" />
+      <ResizablePanel id="bottom" defaultSize="38%" minSize="15%">
+        <ResizablePanelGroup orientation="horizontal" defaultLayout={horizontal.defaultLayout} onLayoutChanged={horizontal.onLayoutChanged}>
+          <ResizablePanel
+            id="candidates"
+            panelRef={collapsedRef}
+            defaultSize="30%"
+            minSize="220px"
+            collapsible
+            collapsedSize="0%"
+            onResize={(size) => onCandidatesCollapsed(size.asPercentage < 1)}
+            className="border-r"
+          >
+            {candidates}
+          </ResizablePanel>
+          <ResizableHandle withHandle className="w-1.5 cursor-col-resize bg-border hover:bg-primary/30" />
+          <ResizablePanel id="preview" defaultSize="70%" minSize="30%">
+            {preview}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   );
 }

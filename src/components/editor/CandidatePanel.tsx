@@ -16,11 +16,12 @@ interface Props {
   onChooseToken: (tokenId: string) => void;
   onEdit: () => void;
   onToggleVerified: (verified: boolean) => void;
+  searchRef?: React.Ref<HTMLInputElement>;
 }
 
 const TOP_N = 5;
 
-export function CandidatePanel({ cell, columnField, candidates, tokens, onChooseCandidate, onChooseToken, onEdit, onToggleVerified }: Props) {
+export function CandidatePanel({ cell, columnField, candidates, tokens, onChooseCandidate, onChooseToken, onEdit, onToggleVerified, searchRef }: Props) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const q = normalizeForSearch(query);
@@ -93,7 +94,7 @@ export function CandidatePanel({ cell, columnField, candidates, tokens, onChoose
         <p className="mt-1 text-[10px] text-muted-foreground">{t("editor.scoreNote")}</p>
 
         <h3 className="mt-3 text-xs font-semibold">{t("editor.allText")}</h3>
-        <Input className="mt-1.5 h-7 text-xs" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("editor.searchText")} aria-label={t("editor.searchText")} />
+        <Input ref={searchRef} className="mt-1.5 h-7 text-xs" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("editor.searchText")} aria-label={t("editor.searchText")} />
         {filtered.length === 0 ? (
           <p className="mt-1 text-xs text-muted-foreground">{t("editor.noTextFound")}</p>
         ) : (
