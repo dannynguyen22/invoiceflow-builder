@@ -13,10 +13,11 @@ interface Props {
   usedFields: Set<FieldId>;
   canReplace: boolean;
   onAdd: (f: FieldId) => void;
+  onAddDuplicate: (f: FieldId) => void;
   onReplaceSelected: (f: FieldId) => void;
 }
 
-export function FieldsPanel({ usedFields, canReplace, onAdd, onReplaceSelected }: Props) {
+export function FieldsPanel({ usedFields, canReplace, onAdd, onAddDuplicate, onReplaceSelected }: Props) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const q = normalizeForSearch(query);
@@ -44,7 +45,7 @@ export function FieldsPanel({ usedFields, canReplace, onAdd, onReplaceSelected }
             <ul className="mt-1.5 space-y-1">
               {fields.map((f) => (
                 <li key={f.id}>
-                  <FieldItem field={f} used={usedFields.has(f.id)} canReplace={canReplace} onAdd={onAdd} onReplaceSelected={onReplaceSelected} />
+                  <FieldItem field={f} used={usedFields.has(f.id)} canReplace={canReplace} onAdd={onAdd} onAddDuplicate={onAddDuplicate} onReplaceSelected={onReplaceSelected} />
                 </li>
               ))}
             </ul>
@@ -55,7 +56,7 @@ export function FieldsPanel({ usedFields, canReplace, onAdd, onReplaceSelected }
   );
 }
 
-function FieldItem({ field: f, used, canReplace, onAdd, onReplaceSelected }: { field: FieldDefinition; used: boolean } & Omit<Props, "usedFields">) {
+function FieldItem({ field: f, used, canReplace, onAdd, onAddDuplicate, onReplaceSelected }: { field: FieldDefinition; used: boolean } & Omit<Props, "usedFields">) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   return (
@@ -85,7 +86,14 @@ function FieldItem({ field: f, used, canReplace, onAdd, onReplaceSelected }: { f
         </DropdownMenuTrigger>
       </div>
       <DropdownMenuContent align="start">
-        <DropdownMenuItem onSelect={() => onAdd(f.id)}>{t("editor.addColumn")}</DropdownMenuItem>
+        {used ? (
+          <DropdownMenuItem onSelect={() => onAddDuplicate(f.id)}>
+            {t("editor.addDuplicateColumn")}
+            <span className="ml-auto pl-3 text-[11px] text-muted-foreground">{t("editor.duplicateMenuHint")}</span>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onSelect={() => onAdd(f.id)}>{t("editor.addColumn")}</DropdownMenuItem>
+        )}
         <DropdownMenuItem disabled={!canReplace} onSelect={() => onReplaceSelected(f.id)}>
           {t("editor.replaceSelectedColumn")}
         </DropdownMenuItem>

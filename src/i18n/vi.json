@@ -54,9 +54,7 @@
   },
   "workspace": {
     "title": "Tải hóa đơn",
-    "subtitle": "Tối đa {{count}} file mỗi lần, hỗ trợ PDF, XML, JPG, PNG.",
-    "notReadyTitle": "Chưa thể xử lý file",
-    "notReadyBody": "Tính năng tải và đọc hóa đơn đang được phát triển. Ứng dụng chưa đọc file thật và sẽ không hiển thị tiến trình giả.",
+    "subtitle": "Tải tối đa {{count}} file mỗi lần. Hỗ trợ PDF, XML, JPG, PNG.",
     "openEditor": "Dùng thử với dữ liệu mẫu"
   },
   "editor": {
@@ -68,7 +66,6 @@
     "searchFields": "Tìm trường dữ liệu…",
     "noFieldsFound": "Không tìm thấy trường phù hợp",
     "previewEmpty": "Chọn một ô để xem vị trí tương ứng trên hóa đơn gốc.",
-    "interactionsPending": "Tải và đọc file thật sẽ có trong bản cập nhật tới.",
     "emptyCell": "Trống",
     "invoiceCount": "{{count}} hóa đơn",
     "toolbarLabel": "Thao tác chỉnh sửa",
@@ -117,7 +114,19 @@
     "undone": "Đã hoàn tác.",
     "redone": "Đã làm lại.",
     "nothingToUndo": "Không còn thao tác để hoàn tác.",
-    "nothingToRedo": "Không còn thao tác để làm lại."
+    "nothingToRedo": "Không còn thao tác để làm lại.",
+    "verify": "Xác nhận đúng",
+    "unverify": "Bỏ xác nhận",
+    "verified": "Đã xác nhận giá trị.",
+    "unverifiedToast": "Đã bỏ xác nhận.",
+    "verifyHint": "Chọn giá trị chưa có nghĩa là đã kiểm tra. Bấm “Xác nhận đúng” sau khi bạn đã đối chiếu với hóa đơn gốc.",
+    "duplicateColumn": "Đã có cột “{{field}}”.",
+    "duplicateAddAnyway": "Vẫn thêm cột",
+    "duplicateMenuHint": "Đã có trong bảng",
+    "addDuplicateColumn": "Thêm cột trùng",
+    "realDataNotice": "Dữ liệu được đọc ngay trên trình duyệt từ {{count}} file bạn đã tải lên.",
+    "noCandidatesYet": "Ô chưa được điền sẵn với PDF và ảnh: hãy kéo văn bản từ hóa đơn gốc vào ô. Gợi ý tự động sẽ có ở bản cập nhật tới.",
+    "backToUpload": "Tải thêm hóa đơn"
   },
   "fieldGroups": {
     "invoice": "Hóa đơn",
@@ -182,6 +191,68 @@
     "cross_document": "Chỉ dùng được văn bản từ chính hóa đơn của dòng này.",
     "unknown_token": "Không tìm thấy văn bản này trên hóa đơn.",
     "unknown_cell": "Không tìm thấy ô cần sửa.",
-    "duplicate_column": "Cột này đã tồn tại."
+    "duplicate_column": "Cột này đã tồn tại.",
+    "verify_needs_review": "Ô này đang cần xem lại. Hãy sửa giá trị trước khi xác nhận."
+  },
+  "preview": {
+    "controls": "Điều khiển trang và thu phóng",
+    "prevPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "zoomIn": "Phóng to",
+    "zoomOut": "Thu nhỏ",
+    "zoomReset": "Vừa khung",
+    "sourceOnPages": "Vị trí nguồn ở trang:",
+    "xmlHint": "File XML không có hình ảnh trang. Mỗi dòng là một giá trị trong file, kèm đường dẫn thẻ.",
+    "xmlList": "Giá trị trong file XML",
+    "pageImage": "Ảnh trang {{page}}"
+  },
+  "upload": {
+    "dropTitle": "Kéo thả hóa đơn vào đây",
+    "dropOr": "hoặc",
+    "choose": "Chọn file",
+    "limits": "PDF, XML, JPG, PNG · tối đa {{size}} MB mỗi file · {{count}} file mỗi lần",
+    "privacy": "File được đọc ngay trên trình duyệt của bạn. Ứng dụng không gửi nội dung hóa đơn lên máy chủ.",
+    "listTitle": "File đã chọn ({{count}}/{{max}})",
+    "remove": "Xóa",
+    "retry": "Thử lại",
+    "clear": "Xóa tất cả",
+    "openEditor": "Kiểm tra dữ liệu",
+    "openSample": "Dùng thử với dữ liệu mẫu",
+    "overLimit": "Chỉ nhận tối đa {{max}} file. {{count}} file đã bị bỏ qua.",
+    "empty": "Chưa có file nào.",
+    "pages": "{{count}} trang",
+    "tokens": "{{count}} đoạn văn bản",
+    "fieldsFound": "{{count}} trường nhận diện từ XML",
+    "status": {
+      "queued": "Đang chờ",
+      "processing": "Đang xử lý",
+      "ready": "Đã đọc xong",
+      "unsupported": "Chưa hỗ trợ mẫu này",
+      "failed": "Lỗi"
+    },
+    "stage": {
+      "reading": "Đang đọc file",
+      "parsing": "Đang trích xuất văn bản",
+      "loading_ocr": "Đang tải bộ nhận dạng chữ (chỉ lần đầu)",
+      "ocr": "Đang nhận dạng chữ (OCR)"
+    },
+    "issues": {
+      "xml_unsupported_layout": "Không nhận ra cấu trúc hóa đơn điện tử. Bạn vẫn có thể gán giá trị thủ công.",
+      "no_text_found": "Không tìm thấy chữ nào trong file.",
+      "ocr_used": "Đã dùng OCR — hãy kiểm tra kỹ kết quả."
+    },
+    "errors": {
+      "too_large": "File vượt quá {{size}} MB.",
+      "unsupported_type": "Định dạng không được hỗ trợ.",
+      "type_mismatch": "Nội dung file không khớp với phần mở rộng.",
+      "too_many_files": "Quá số file cho phép.",
+      "xml_unsafe": "File XML chứa khai báo không an toàn (DOCTYPE/ENTITY) nên bị từ chối.",
+      "xml_invalid": "File XML bị lỗi cấu trúc.",
+      "pdf_invalid": "Không mở được file PDF.",
+      "pdf_encrypted": "PDF có mật khẩu, chưa thể đọc.",
+      "image_invalid": "Không đọc được ảnh.",
+      "ocr_failed": "Nhận dạng chữ thất bại.",
+      "unknown": "Đã có lỗi khi xử lý file."
+    }
   }
 }

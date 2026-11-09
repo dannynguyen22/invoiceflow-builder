@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pencil } from "lucide-react";
+import { CheckCircle2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Cell, FieldCandidate, FieldId, OCRToken } from "@/domain/types";
@@ -15,11 +15,12 @@ interface Props {
   onChooseCandidate: (c: FieldCandidate) => void;
   onChooseToken: (tokenId: string) => void;
   onEdit: () => void;
+  onToggleVerified: (verified: boolean) => void;
 }
 
 const TOP_N = 5;
 
-export function CandidatePanel({ cell, columnField, candidates, tokens, onChooseCandidate, onChooseToken, onEdit }: Props) {
+export function CandidatePanel({ cell, columnField, candidates, tokens, onChooseCandidate, onChooseToken, onEdit, onToggleVerified }: Props) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const q = normalizeForSearch(query);
@@ -51,7 +52,20 @@ export function CandidatePanel({ cell, columnField, candidates, tokens, onChoose
             ))}
           </ul>
         )}
-        <p className="mt-1.5 text-[11px] text-muted-foreground">{t("editor.editHint")}</p>
+        <div className="mt-2 flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={cell.verified ? "secondary" : "default"}
+            className="h-7 px-2 text-xs"
+            disabled={!cell.verified && cell.reviewState === "needs_review"}
+            onClick={() => onToggleVerified(!cell.verified)}
+            aria-pressed={cell.verified}
+          >
+            <CheckCircle2 aria-hidden /> {t(cell.verified ? "editor.unverify" : "editor.verify")}
+          </Button>
+        </div>
+        <p className="mt-1.5 text-[11px] text-muted-foreground">{t("editor.verifyHint")}</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">{t("editor.editHint")}</p>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-3">
         <h3 className="text-xs font-semibold">{t("editor.candidatesTitle")}</h3>

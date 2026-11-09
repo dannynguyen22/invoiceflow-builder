@@ -24,7 +24,7 @@ export interface EditorState {
   future: CorrectionOperation[];
 }
 
-export type EditorError = "cross_document" | "unknown_token" | "unknown_cell" | "duplicate_column";
+export type EditorError = "cross_document" | "unknown_token" | "unknown_cell" | "duplicate_column" | "verify_needs_review";
 export type CommandResult = { ok: true; state: EditorState } | { ok: false; error: EditorError; state: EditorState };
 
 export const cellKey = (documentId: string, columnId: string) => `${documentId}::${columnId}`;
@@ -47,12 +47,17 @@ export function evaluate(cell: Cell, columnField: FieldId): Cell {
     if (!isValueCompatible(columnField, value)) flags.push("invalid_format");
     if (cell.fieldId !== columnField) flags.push("field_mismatch");
   }
+  // "Value selected" (provenance) and "value verified" (explicit user check) are separate:
+  // only `verified` can produce "confirmed". A flagged cell can never stay verified.
   let reviewState: ReviewState;
-  if (flags.length && !(cell.provenance === "manual" && flags.every((f) => f === "missing"))) reviewState = "needs_review";
+  let verified = cell.verified;
+  if (flags.length && !(cell.provenance === "manual" && flags.every((f) => f === "missing"))) {
+    reviewState = "needs_review";
+    verified = false;
+  } else if (verified) reviewState = "confirmed";
   else if (cell.provenance === "manual") reviewState = "manual";
-  else if (cell.provenance === "candidate" || cell.provenance === "ocr_drop") reviewState = "confirmed";
   else reviewState = "unreviewed";
-  return { ...cell, flags, reviewState };
+  return { ...cell, flags, reviewState, verified };
 }
 
 // ---------- raw lookups ----------
@@ -76,12 +81,12 @@ function initialCell(raw: RawExtraction, documentId: string, column: EditorColum
   const base = { documentId, columnId: column.id, fieldId: column.fieldId };
   if (column.fieldId === "source_filename") {
     const doc = raw.documents.find((d) => d.id === documentId);
-    return evaluate({ ...base, value: doc?.name ?? "", sourceTokenIds: [], provenance: "extracted", reviewState: "unreviewed", flags: [] }, column.fieldId);
+    return evaluate({ ...base, value: doc?.name ?? "", sourceTokenIds: [], provenance: "extracted", reviewState: "unreviewed", flags: [], verified: false }, column.fieldId);
   }
   const c = reliableCandidate(raw, documentId, column.fieldId);
   const provenance: Provenance = c ? "extracted" : "empty";
   return evaluate(
-    { ...base, value: c?.value ?? "", sourceTokenIds: c?.tokenIds ?? [], provenance, reviewState: "unreviewed", flags: [] },
+    { ...base, value: c?.value ?? "", sourceTokenIds: c?.tokenIds ?? [], provenance, reviewState: "unreviewed", flags: [], verified: false },
     column.fieldId,
   );
 }
@@ -144,13 +149,25 @@ export function replaceColumnField(state: EditorState, columnId: string, fieldId
   const changes: CellChange[] = [];
   for (const cell of Object.values(state.cells)) {
     if (cell.columnId !== columnId) continue;
-    changes.push({ documentId: cell.documentId, columnId, before: cell, after: evaluate(cell, fieldId) });
+    changes.push({ documentId: cell.documentId, columnId, before: cell, after: evaluate({ ...cell, verified: false }, fieldId) });
   }
   return ok(commit(state, "replace_field", "column", changes, { before: state.columns, after }));
 }
 
-/** Field dropped on the Add zone: new column at the end; only reliable matches are filled. */
-export function addColumn(state: EditorState, raw: RawExtraction, fieldId: FieldId): CommandResult {
+export const hasColumnForField = (state: EditorState, fieldId: FieldId) => state.columns.some((c) => c.fieldId === fieldId);
+
+/**
+ * Field dropped on the Add zone: new column at the end; only reliable matches are filled.
+ * A second column for the same field is refused ("duplicate_column") unless the user
+ * explicitly asked for it (`allowDuplicate`), so accidental double drops don't clutter exports.
+ */
+export function addColumn(
+  state: EditorState,
+  raw: RawExtraction,
+  fieldId: FieldId,
+  opts: { allowDuplicate?: boolean } = {},
+): CommandResult {
+  if (!opts.allowDuplicate && hasColumnForField(state, fieldId)) return fail(state, "duplicate_column");
   const column: EditorColumn = { id: newId(`col-${fieldId}`), fieldId };
   const changes: CellChange[] = raw.documents.map((d) => ({
     documentId: d.id,
@@ -184,7 +201,8 @@ function setCell(
   const col = state.columns.find((c) => c.id === columnId);
   if (!before || !col) return fail(state, "unknown_cell");
   // Explicit user assignment = per-cell correction: interpretation becomes the column field.
-  const after = evaluate({ ...before, ...patch, fieldId: col.fieldId }, col.fieldId);
+  // A new value is "selected", never "verified": verification must be explicit.
+  const after = evaluate({ ...before, ...patch, fieldId: col.fieldId, verified: false }, col.fieldId);
   return ok(commit(state, "set_value", "cell", [{ documentId, columnId, before, after }]));
 }
 
@@ -196,7 +214,23 @@ export function assignToken(state: EditorState, raw: RawExtraction, documentId: 
   return setCell(state, documentId, columnId, { value: token.text, sourceTokenIds: [token.id], provenance: "ocr_drop" });
 }
 
-export function chooseCandidate(state: EditorState, documentId: string, columnId: string, candidate: FieldCandidate): CommandResult {
+/**
+ * Candidate chosen for a cell. Ownership is validated here (not only by UI filtering):
+ * every source token must exist and belong to the target invoice.
+ */
+export function chooseCandidate(
+  state: EditorState,
+  raw: RawExtraction,
+  documentId: string,
+  columnId: string,
+  candidate: FieldCandidate,
+): CommandResult {
+  if (!candidate.tokenIds.length) return fail(state, "unknown_token");
+  for (const id of candidate.tokenIds) {
+    const token = raw.tokens.find((t) => t.id === id);
+    if (!token) return fail(state, "unknown_token");
+    if (token.documentId !== documentId) return fail(state, "cross_document");
+  }
   return setCell(state, documentId, columnId, { value: candidate.value, sourceTokenIds: candidate.tokenIds, provenance: "candidate" });
 }
 
@@ -205,4 +239,16 @@ export function editCell(state: EditorState, documentId: string, columnId: strin
   const cur = state.cells[cellKey(documentId, columnId)];
   if (cur && cur.value === value) return ok(state);
   return setCell(state, documentId, columnId, { value, sourceTokenIds: [], provenance: "manual" });
+}
+
+/** Explicit verification toggle. Flagged cells must be fixed before they can be verified. */
+export function setVerified(state: EditorState, documentId: string, columnId: string, verified: boolean): CommandResult {
+  const k = cellKey(documentId, columnId);
+  const before = state.cells[k];
+  const col = state.columns.find((c) => c.id === columnId);
+  if (!before || !col) return fail(state, "unknown_cell");
+  if (before.verified === verified) return ok(state);
+  if (verified && before.reviewState === "needs_review") return fail(state, "verify_needs_review");
+  const after = evaluate({ ...before, verified }, col.fieldId);
+  return ok(commit(state, "verify", "cell", [{ documentId, columnId, before, after }]));
 }

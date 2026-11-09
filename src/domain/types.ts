@@ -53,12 +53,16 @@ export interface PageSize {
   width: number;
   height: number;
 }
+/** How the raw tokens were produced. "fixture" = synthetic sample data. */
+export type ExtractionSource = "xml" | "pdf_text" | "ocr" | "fixture";
 export interface InvoiceDocument {
   readonly id: string;
   readonly name: string;
   readonly mime: SupportedMime;
   readonly pages: number;
-  readonly pageSize: PageSize;
+  /** Size of each page (index 0 = page 1) in the coordinate space of token bboxes. */
+  readonly pageSizes: readonly PageSize[];
+  readonly source: ExtractionSource;
   status: DocumentStatus;
 }
 export interface OCRToken {
@@ -66,7 +70,10 @@ export interface OCRToken {
   readonly documentId: string;
   readonly page: number;
   readonly text: string;
-  readonly bbox: BBox;
+  /** Position on the page. Absent for structured sources (XML) that have no geometry. */
+  readonly bbox?: BBox;
+  /** Structured source path (XML element path), when the token comes from structured data. */
+  readonly sourcePath?: string;
   /** Engine-reported confidence 0–1; not a calibrated probability. */
   readonly confidence: number;
 }
@@ -99,6 +106,11 @@ export interface Cell {
   provenance: Provenance;
   reviewState: ReviewState;
   flags: CellFlag[];
+  /**
+   * Explicit user verification. Selecting a value (candidate, OCR drop, manual edit) never
+   * sets this; only the verify command does, and any later value/field change clears it.
+   */
+  verified: boolean;
 }
 /** Grid/schema column. Order = position in the columns array; identity = stable `id`. */
 export interface EditorColumn {
@@ -118,6 +130,7 @@ export type CorrectionKind =
   | "replace_field"
   | "add_column"
   | "reorder_columns"
+  | "verify"
   | "auto_fill"
   | "batch_correction";
 export type CorrectionScope = "cell" | "column" | "current_invoice" | "same_supplier" | "similar_layout" | "batch";

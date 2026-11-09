@@ -55,8 +55,6 @@
   "workspace": {
     "title": "Upload invoices",
     "subtitle": "Up to {{count}} files per batch: PDF, XML, JPG, PNG.",
-    "notReadyTitle": "File processing is not enabled yet",
-    "notReadyBody": "At this foundation stage the app does not read real files. Upload and extraction are built in later stages; we will not show fake progress.",
     "openEditor": "Open the editor with sample data"
   },
   "editor": {
@@ -68,7 +66,6 @@
     "searchFields": "Search fields…",
     "noFieldsFound": "No matching fields",
     "previewEmpty": "Select a cell to see its location on the original document.",
-    "interactionsPending": "Uploading and reading real files arrives in a later update.",
     "emptyCell": "Empty",
     "invoiceCount": "{{count}} invoices",
     "toolbarLabel": "Editing actions",
@@ -117,7 +114,19 @@
     "undone": "Undone.",
     "redone": "Redone.",
     "nothingToUndo": "Nothing to undo.",
-    "nothingToRedo": "Nothing to redo."
+    "nothingToRedo": "Nothing to redo.",
+    "verify": "Mark as verified",
+    "unverify": "Remove verification",
+    "verified": "Value verified.",
+    "unverifiedToast": "Verification removed.",
+    "verifyHint": "Choosing a value doesn't mean it's checked. Click “Mark as verified” once you've compared it with the original invoice.",
+    "duplicateColumn": "A “{{field}}” column already exists.",
+    "duplicateAddAnyway": "Add anyway",
+    "duplicateMenuHint": "Already in the table",
+    "addDuplicateColumn": "Add duplicate column",
+    "realDataNotice": "Data read in your browser from the {{count}} files you uploaded.",
+    "noCandidatesYet": "PDF and image cells aren't pre-filled yet: drag text from the original invoice into a cell. Automatic suggestions arrive in the next update.",
+    "backToUpload": "Upload more invoices"
   },
   "fieldGroups": {
     "invoice": "Invoice",
@@ -182,6 +191,68 @@
     "cross_document": "You can only use text from this row's own invoice.",
     "unknown_token": "This text was not found on the invoice.",
     "unknown_cell": "The cell could not be found.",
-    "duplicate_column": "This column already exists."
+    "duplicate_column": "This column already exists.",
+    "verify_needs_review": "This cell needs review. Fix the value before verifying it."
+  },
+  "preview": {
+    "controls": "Page and zoom controls",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Fit to width",
+    "sourceOnPages": "Source found on page:",
+    "xmlHint": "XML files have no page image. Each row is a value from the file with its tag path.",
+    "xmlList": "Values in the XML file",
+    "pageImage": "Page {{page}} image"
+  },
+  "upload": {
+    "dropTitle": "Drag and drop invoices here",
+    "dropOr": "or",
+    "choose": "Choose files",
+    "limits": "PDF, XML, JPG, PNG · up to {{size}} MB per file · {{count}} files per batch",
+    "privacy": "Files are read in your browser. The app does not send invoice contents to a server.",
+    "listTitle": "Selected files ({{count}}/{{max}})",
+    "remove": "Remove",
+    "retry": "Retry",
+    "clear": "Clear all",
+    "openEditor": "Review data",
+    "openSample": "Try with sample data",
+    "overLimit": "Only {{max}} files are accepted. {{count}} files were skipped.",
+    "empty": "No files yet.",
+    "pages": "{{count}} pages",
+    "tokens": "{{count}} text items",
+    "fieldsFound": "{{count}} fields recognised from XML",
+    "status": {
+      "queued": "Waiting",
+      "processing": "Processing",
+      "ready": "Done",
+      "unsupported": "Layout not supported",
+      "failed": "Error"
+    },
+    "stage": {
+      "reading": "Reading file",
+      "parsing": "Extracting text",
+      "loading_ocr": "Loading text recognition (first time only)",
+      "ocr": "Recognising text (OCR)"
+    },
+    "issues": {
+      "xml_unsupported_layout": "No e-invoice structure recognised. You can still assign values manually.",
+      "no_text_found": "No text found in this file.",
+      "ocr_used": "OCR was used — check results carefully."
+    },
+    "errors": {
+      "too_large": "File is larger than {{size}} MB.",
+      "unsupported_type": "Unsupported format.",
+      "type_mismatch": "File content doesn't match its extension.",
+      "too_many_files": "Too many files.",
+      "xml_unsafe": "XML contains unsafe declarations (DOCTYPE/ENTITY) and was rejected.",
+      "xml_invalid": "XML file is malformed.",
+      "pdf_invalid": "Couldn't open this PDF.",
+      "pdf_encrypted": "PDF is password-protected and can't be read yet.",
+      "image_invalid": "Couldn't read this image.",
+      "ocr_failed": "Text recognition failed.",
+      "unknown": "Something went wrong processing this file."
+    }
   }
 }

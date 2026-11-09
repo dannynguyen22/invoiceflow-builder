@@ -18,3 +18,10 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+
+class RO {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+if (!("ResizeObserver" in window)) Object.defineProperty(window, "ResizeObserver", { writable: true, value: RO });

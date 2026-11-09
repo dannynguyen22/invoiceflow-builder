@@ -1,5 +1,5 @@
 // TEST/DEV FIXTURES ONLY. Synthetic invoices used to develop the editor (Phase 1)
-// before real extraction exists (Phase 2). Never presented as real processing output.
+// and tests. doc-b spans two pages (totals on page 2) to exercise multi-page preview. Never presented as real processing output.
 import type { EditorColumn, FieldCandidate, FieldId, InvoiceDocument, OCRToken, RawExtraction, SupportedMime } from "./types";
 
 type Line = { label: string; value: string; field?: FieldId; score?: number };
@@ -7,20 +7,26 @@ type Extra = { text: string; field?: FieldId; score?: number };
 
 const PAGE = { width: 600, height: 800 };
 
-function buildDoc(id: string, name: string, mime: SupportedMime, lines: Line[], extras: Extra[] = []) {
+/** `breakAfter`: number of label/value lines on page 1; the rest (and extras) go to page 2. */
+function buildDoc(id: string, name: string, mime: SupportedMime, lines: Line[], extras: Extra[] = [], breakAfter?: number) {
   const tokens: OCRToken[] = [];
   const candidates: FieldCandidate[] = [];
   let n = 0;
+  let page = 1;
   const mk = (text: string, x: number, y: number, w: number, confidence: number): OCRToken => ({
     id: `${id}-t${++n}`,
     documentId: id,
-    page: 1,
+    page,
     text,
     bbox: { x, y, width: w, height: 18 },
     confidence,
   });
   let y = 60;
-  for (const l of lines) {
+  for (const [i, l] of lines.entries()) {
+    if (breakAfter !== undefined && i === breakAfter) {
+      page = 2;
+      y = 60;
+    }
     tokens.push(mk(l.label, 40, y, 200, 0.95));
     const v = mk(l.value, 260, y, Math.min(300, 20 + l.value.length * 9), 0.9);
     tokens.push(v);
@@ -34,7 +40,15 @@ function buildDoc(id: string, name: string, mime: SupportedMime, lines: Line[], 
     if (e.field) candidates.push({ fieldId: e.field, tokenIds: [t.id], value: e.text, score: e.score ?? 0.5, reasons: ["value_shape"] });
     y += 34;
   }
-  const document: InvoiceDocument = { id, name, mime, pages: 1, pageSize: PAGE, status: "ready" };
+  const document: InvoiceDocument = {
+    id,
+    name,
+    mime,
+    pages: page,
+    pageSizes: Array.from({ length: page }, () => PAGE),
+    source: "fixture",
+    status: "ready",
+  };
   return { document, tokens, candidates };
 }
 
@@ -63,7 +77,7 @@ const docs = [
     { label: "VAT (10%):", value: "250000", field: "vat_amount" },
     { label: "Total:", value: "2750000", field: "total_amount" },
     { label: "Currency:", value: "VND", field: "currency" },
-  ], [{ text: "0312345678-001", field: "buyer_tax_id", score: 0.6 }]),
+  ], [{ text: "0312345678-001", field: "buyer_tax_id", score: 0.6 }], 5),
   // Deliberately incomplete/ambiguous: no date, two near-equal tax ID candidates.
   buildDoc("doc-c", "scan_hd_55.jpg", "image/jpeg", [
     { label: "Số:", value: "0000055", field: "invoice_number" },

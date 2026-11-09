@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Info, PanelRight, Redo2, Undo2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Info, PanelRight, Redo2, Undo2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -11,7 +12,9 @@ import { CandidatePanel } from "@/components/editor/CandidatePanel";
 import { DocumentPreview } from "@/components/editor/DocumentPreview";
 import { KeyboardHelp } from "@/components/editor/KeyboardHelp";
 import { DEFAULT_COLUMNS, FIXTURE_RAW } from "@/domain/fixtures";
-import type { FieldId } from "@/domain/types";
+import type { FieldId, RawExtraction } from "@/domain/types";
+import { buildRaw } from "@/extraction/store";
+import { useUploads } from "@/extraction/useUploads";
 import {
   addColumn,
   assignToken,
@@ -22,6 +25,7 @@ import {
   moveColumn,
   rankedCandidates,
   replaceColumnField,
+  setVerified,
   type CommandResult,
 } from "@/editor/engine";
 import { useEditor, type Selection } from "@/editor/useEditor";
@@ -41,9 +45,19 @@ export const Route = createFileRoute("/workspace/editor")({
   component: Editor,
 });
 
-const raw = FIXTURE_RAW;
-
+/** Uses the documents processed in this browser session; falls back to labelled sample data. */
 function Editor() {
+  const items = useUploads();
+  const real = useMemo(() => buildRaw(items), [items]);
+  const isSample = real.documents.length === 0;
+  const raw = isSample ? FIXTURE_RAW : real;
+  const pageImages = useMemo(() => Object.fromEntries(items.map((i) => [i.id, i.result?.pageImages ?? []])), [items]);
+  // New documents → fresh editor state (the engine state is per document set).
+  const key = raw.documents.map((d) => d.id).join("|");
+  return <EditorView key={key} raw={raw} isSample={isSample} pageImages={pageImages} />;
+}
+
+function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSample: boolean; pageImages: Record<string, string[]> }) {
   const { t } = useI18n();
   const { state, run, undo, redo } = useEditor(raw, DEFAULT_COLUMNS);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -102,8 +116,15 @@ function Editor() {
       action: { label: t("editor.undo"), onClick: () => undo() },
     });
   };
-  const onAddColumn = (fieldId: FieldId) => {
-    const r = run((s) => addColumn(s, raw, fieldId));
+  const onAddColumn = (fieldId: FieldId, allowDuplicate = false) => {
+    const r = run((s) => addColumn(s, raw, fieldId, { allowDuplicate }));
+    if (!r.ok && r.error === "duplicate_column") {
+      // Intentional duplicates stay possible, but only through an explicit second action.
+      toast.warning(t("editor.duplicateColumn", { field: fieldLabel(fieldId) }), {
+        action: { label: t("editor.duplicateAddAnyway"), onClick: () => onAddColumn(fieldId, true) },
+      });
+      return;
+    }
     report(r, t("editor.columnAdded", { field: fieldLabel(fieldId) }));
   };
   const onMoveColumn = (columnId: string, toIndex: number) => report(run((s) => moveColumn(s, columnId, toIndex)));
@@ -118,7 +139,7 @@ function Editor() {
   const selectedColumn = selection ? state.columns.find((c) => c.id === selection.columnId) ?? null : null;
   const previewDocId = selection?.documentId ?? raw.documents[0]?.id ?? null;
   const previewDoc = raw.documents.find((d) => d.id === previewDocId) ?? null;
-  const previewTokens = useMemo(() => (previewDocId ? documentTokens(raw, previewDocId) : []), [previewDocId]);
+  const previewTokens = useMemo(() => (previewDocId ? documentTokens(raw, previewDocId) : []), [raw, previewDocId]);
   const candidates = selection && selectedColumn ? rankedCandidates(raw, selection.documentId, selectedColumn.fieldId) : [];
   const usedFields = useMemo(() => new Set(state.columns.map((c) => c.fieldId)), [state.columns]);
 
@@ -126,7 +147,8 @@ function Editor() {
     <FieldsPanel
       usedFields={usedFields}
       canReplace={!!selectedColumn}
-      onAdd={onAddColumn}
+      onAdd={(f) => onAddColumn(f)}
+      onAddDuplicate={(f) => onAddColumn(f, true)}
       onReplaceSelected={(f) => selectedColumn && onReplaceField(selectedColumn.id, f)}
     />
   );
@@ -134,12 +156,24 @@ function Editor() {
   return (
     <div className="flex h-[calc(100vh-3rem)] flex-col">
       <div role="toolbar" aria-label={t("editor.toolbarLabel")} className="flex items-center gap-2 border-b bg-paper px-3 py-1.5">
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded bg-review/15 px-2 py-1 text-xs text-review-foreground">
-          <Info className="size-3.5 shrink-0" aria-hidden />
-          <span className="truncate">
-            {t("editor.fixtureNotice")} {t("editor.interactionsPending")}
-          </span>
-        </div>
+        {isSample ? (
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded bg-review/15 px-2 py-1 text-xs text-review-foreground" title={t("editor.fixtureNotice")}>
+            <Info className="size-3.5 shrink-0" aria-hidden />
+            <span className="truncate">{t("editor.fixtureNotice")}</span>
+          </div>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded bg-accent/60 px-2 py-1 text-xs" title={t("editor.noCandidatesYet")}>
+            <Info className="size-3.5 shrink-0 text-primary" aria-hidden />
+            <span className="truncate">
+              {t("editor.realDataNotice", { count: raw.documents.length })} {t("editor.noCandidatesYet")}
+            </span>
+          </div>
+        )}
+        <Button size="sm" variant="outline" className="h-7 px-2" asChild>
+          <Link to="/workspace" title={t("editor.backToUpload")} aria-label={t("editor.backToUpload")}>
+            <Upload aria-hidden />
+          </Link>
+        </Button>
         <span className="hidden text-xs text-muted-foreground sm:inline">{t("editor.invoiceCount", { count: raw.documents.length })}</span>
         <Button size="sm" variant="outline" className="h-7 px-2" onClick={doUndo} disabled={!state.past.length} aria-label={t("editor.undo")} title={t("editor.undo")}>
           <Undo2 aria-hidden />
@@ -181,7 +215,7 @@ function Editor() {
                 }}
                 onCancelEdit={() => setEditing(false)}
                 onReplaceField={onReplaceField}
-                onAddColumn={onAddColumn}
+                onAddColumn={(f) => onAddColumn(f)}
                 onMoveColumn={onMoveColumn}
                 onDropToken={onDropToken}
               />
@@ -189,7 +223,7 @@ function Editor() {
           </ResizablePanel>
           <ResizableHandle withHandle className="h-1.5 w-full cursor-row-resize bg-border hover:bg-primary/30" />
           <ResizablePanel defaultSize="45%" minSize="15%">
-            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] bg-background md:grid-cols-[minmax(260px,340px)_1fr] md:grid-rows-1">
+            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] bg-background md:grid-cols-[minmax(260px,340px)_minmax(0,1fr)] md:grid-rows-1">
               <section aria-label={t("editor.candidatesTitle")} className="min-h-0 border-b bg-paper md:border-b-0 md:border-r">
                 <CandidatePanel
                   key={selection ? cellKey(selection.documentId, selection.columnId) : "none"}
@@ -197,15 +231,19 @@ function Editor() {
                   columnField={selectedColumn?.fieldId ?? null}
                   candidates={candidates}
                   tokens={previewTokens}
-                  onChooseCandidate={(c) => selection && report(run((s) => chooseCandidate(s, selection.documentId, selection.columnId, c)))}
+                  onChooseCandidate={(c) => selection && report(run((s) => chooseCandidate(s, raw, selection.documentId, selection.columnId, c)))}
+                  onToggleVerified={(v) =>
+                    selection && report(run((s) => setVerified(s, selection.documentId, selection.columnId, v)), t(v ? "editor.verified" : "editor.unverifiedToast"))
+                  }
                   onChooseToken={(id) => selection && onDropToken(selection.documentId, selection.columnId, id)}
                   onEdit={() => setEditing(true)}
                 />
               </section>
-              <section aria-label={t("editor.previewRegion")} className="min-h-0">
+              <section aria-label={t("editor.previewRegion")} className="min-h-0 min-w-0">
                 <DocumentPreview
                   document={previewDoc}
                   tokens={previewTokens}
+                  pageImages={previewDocId ? pageImages[previewDocId] : undefined}
                   highlighted={new Set(selectedCell?.sourceTokenIds ?? [])}
                   canAssign={!!selection}
                   onTokenClick={(id) => selection && onDropToken(selection.documentId, selection.columnId, id)}

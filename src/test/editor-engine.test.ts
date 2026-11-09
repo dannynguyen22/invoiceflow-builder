@@ -99,11 +99,13 @@ describe("candidates and manual edit", () => {
     const list = rankedCandidates(raw, "doc-c", "seller_tax_id");
     expect(list.map((c) => c.value)).toEqual(["8012345678", "0109998887"]);
   });
-  it("choosing a candidate sets value and confirms", () => {
+  it("choosing a candidate sets the value but does NOT verify it", () => {
     const cand = rankedCandidates(raw, "doc-c", "seller_tax_id")[0]!;
-    const c = okState(chooseCandidate(fresh(), "doc-c", taxCol, cand)).cells[cellKey("doc-c", taxCol)]!;
+    const c = okState(chooseCandidate(fresh(), raw, "doc-c", taxCol, cand)).cells[cellKey("doc-c", taxCol)]!;
     expect(c.value).toBe("8012345678");
-    expect(c.reviewState).toBe("confirmed");
+    expect(c.provenance).toBe("candidate");
+    expect(c.verified).toBe(false);
+    expect(c.reviewState).toBe("unreviewed");
   });
   it("manual edit keeps leading zeros and reruns validation", () => {
     const s1 = okState(editCell(fresh(), "doc-a", "col-invoice_date", "31/02/2026"));
