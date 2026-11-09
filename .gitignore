@@ -16,6 +16,9 @@ dist-ssr
 .nitro
 *.local
 
+# Stray npm lockfile (this project uses bun.lock)
+package-lock.json
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

@@ -12,6 +12,7 @@ import { CandidatePanel } from "@/components/editor/CandidatePanel";
 import { DocumentPreview } from "@/components/editor/DocumentPreview";
 import { KeyboardHelp } from "@/components/editor/KeyboardHelp";
 import { CellPicker } from "@/components/editor/CellPicker";
+import { ExportDialog } from "@/components/editor/ExportDialog";
 import { EditorTips, useTipsDismissed } from "@/components/editor/EditorTips";
 import { DEFAULT_COLUMNS, FIXTURE_RAW } from "@/domain/fixtures";
 import type { FieldId, RawExtraction } from "@/domain/types";
@@ -226,6 +227,7 @@ function EditorView({ raw, isSample, pageImages }: { raw: RawExtraction; isSampl
           </Button>
         )}
         <KeyboardHelp />
+        <ExportDialog raw={raw} state={state} columns={state.columns} />
         <Sheet>
           <SheetTrigger asChild>
             <Button size="sm" variant="outline" className="h-7 px-2 lg:hidden">
