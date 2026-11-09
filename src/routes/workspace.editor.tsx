@@ -203,7 +203,7 @@ function EditorView({
   const onApplyAutoFill = (scope: AutoFillScope, acceptIds: string[]) => {
     if (!selection) return;
     const plan = planAutoFill(raw, state, selection.documentId, selection.columnId, scope);
-    const next = apply((s) => applyAutoFill(s, plan, acceptIds).state);
+    const next = apply((s) => applyAutoFill(raw, s, plan, acceptIds).state);
     const filled = acceptIds.length;
     toast.success(t("autofill.done", { count: filled }), {
       action: { label: t("autofill.undo"), onClick: () => undo() },
@@ -221,7 +221,7 @@ function EditorView({
       signature,
       sameSupplier,
     );
-    apply((s) => applyBatchCorrection(s, plan, acceptIds).state);
+    apply((s) => applyBatchCorrection(raw, s, plan, acceptIds).state);
     toast.success(t("batch.done", { count: acceptIds.length }), {
       action: { label: t("editor.undo"), onClick: () => undo() },
     });

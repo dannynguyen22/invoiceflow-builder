@@ -13,11 +13,16 @@ const body = (rows: [FieldId, string][][]) =>
   rows.map((r) => r.map(([fieldId, value]) => ({ fieldId, value })));
 
 describe("CSV export", () => {
-  it("neutralizes formula injection", () => {
+  it("neutralizes formula injection but preserves negative/positive numbers", () => {
     expect(sanitizeForFormula("=SUM(A1)")).toBe("'=SUM(A1)");
-    expect(sanitizeForFormula("+1")).toBe("'+1");
     expect(sanitizeForFormula("@cmd")).toBe("'@cmd");
+    expect(sanitizeForFormula("=1+2")).toBe("'=1+2");
+    // Plain numbers are data, not formulas: credit-note negatives must survive intact.
+    expect(sanitizeForFormula("-500000")).toBe("-500000");
+    expect(sanitizeForFormula("+1")).toBe("+1");
     expect(sanitizeForFormula("0101234567")).toBe("0101234567");
+    // A non-numeric string starting with a risky char is still guarded.
+    expect(sanitizeForFormula("-cmd|calc")).toBe("'-cmd|calc");
   });
   it("preserves leading zeros and quotes fields with the delimiter", () => {
     const csv = toCsv(

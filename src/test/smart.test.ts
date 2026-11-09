@@ -115,7 +115,7 @@ describe("Smart Auto-fill", () => {
 
     const accept = plan.proposals.filter((p) => p.outcome === "matched").map((p) => p.documentId);
     const before = state;
-    const applied = applyAutoFill(state, plan, accept);
+    const applied = applyAutoFill(raw, state, plan, accept);
     expect(applied.filled).toBeGreaterThan(0);
     expect(applied.state.cells[cellKey("d2", "c-invoice_number")]!.value).toBe("0001002"); // untouched
     const undone = undo(applied.state);
@@ -142,7 +142,7 @@ describe("Batch Correction", () => {
     expect(plan.proposals.find((p) => p.documentId === "d2")?.after).toBe("0101234567");
     expect(plan.proposals.find((p) => p.documentId === "d3")?.after).toBe("0300112233");
 
-    const applied = applyBatchCorrection(state, plan, ids);
+    const applied = applyBatchCorrection(raw, state, plan, ids);
     expect(applied.corrected).toBe(2);
     expect(applied.state.cells[cellKey("d2", "c-seller_tax_id")]!.value).toBe("0101234567");
     const undone = undo(applied.state);

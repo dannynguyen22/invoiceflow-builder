@@ -12,9 +12,13 @@ export interface CsvOptions {
 }
 
 const FORMULA_PREFIX = /^[=+\-@\t\r]/;
+// A plain number (optional leading sign, digits, grouping/decimal separators) is data, not a formula:
+// e.g. "-500000" is a credit-note amount and must not be quote-prefixed.
+const PLAIN_NUMBER = /^[+-]?\d[\d.,\s]*$/;
 
 /** Neutralize spreadsheet formula injection by prefixing a leading risky char with a quote. */
 export function sanitizeForFormula(value: string): string {
+  if (PLAIN_NUMBER.test(value)) return value;
   return FORMULA_PREFIX.test(value) ? `'${value}` : value;
 }
 

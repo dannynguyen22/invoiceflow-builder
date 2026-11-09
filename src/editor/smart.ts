@@ -28,6 +28,14 @@ import {
   type EditorState,
 } from "./engine";
 
+/** Every source token of a candidate must belong to the target document (ownership invariant, PRD §03). */
+function ownedBy(raw: RawExtraction, documentId: string, candidate: FieldCandidate): boolean {
+  return candidate.tokenIds.every((id) => {
+    const tk = raw.tokens.find((t) => t.id === id);
+    return tk != null && tk.documentId === documentId;
+  });
+}
+
 export type AutoFillScope = "same_supplier" | "similar_layout" | "batch";
 export type RowOutcome = "matched" | "review" | "not_found" | "protected" | "example";
 
@@ -180,6 +188,7 @@ export function planAutoFill(
  * (the UI lets the user accept a subset). Protected cells are skipped defensively even if passed in.
  */
 export function applyAutoFill(
+  raw: RawExtraction,
   state: EditorState,
   plan: AutoFillPlan,
   acceptDocumentIds: string[],
@@ -188,6 +197,8 @@ export function applyAutoFill(
   const changes: CellChange[] = [];
   for (const p of plan.proposals) {
     if (!accept.has(p.documentId) || !p.candidate) continue;
+    // Ownership invariant: never apply a candidate whose tokens are not this document's own.
+    if (!ownedBy(raw, p.documentId, p.candidate)) continue;
     const k = cellKey(p.documentId, p.columnId);
     const before = state.cells[k];
     if (!before || isAutoFillProtected(before)) continue;
@@ -282,6 +293,7 @@ export function planBatchCorrection(
 }
 
 export function applyBatchCorrection(
+  raw: RawExtraction,
   state: EditorState,
   plan: BatchPlan,
   acceptDocumentIds: string[],
@@ -290,6 +302,7 @@ export function applyBatchCorrection(
   const changes: CellChange[] = [];
   for (const p of plan.proposals) {
     if (!accept.has(p.documentId) || !p.candidate) continue;
+    if (!ownedBy(raw, p.documentId, p.candidate)) continue;
     const k = cellKey(p.documentId, p.columnId);
     const before = state.cells[k];
     if (!before || isConfirmed(before)) continue;
