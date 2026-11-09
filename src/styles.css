@@ -4,12 +4,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* InvoiceFlow design system: "ledger paper" — warm paper, deep ink-green, amber review marks. */
+/* InvoiceFlow design system: modern productivity SaaS — white/neutral surfaces, restrained green accent,
+   amber reserved for review warnings, red for errors. */
 
 @theme inline {
   --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Spectral", ui-serif, Georgia, serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
@@ -39,6 +38,7 @@
   --color-confirmed: var(--confirmed);
   --color-grid-line: var(--grid-line);
   --color-paper: var(--paper);
+  --color-selected: var(--selected);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -55,52 +55,45 @@
 }
 
 :root {
-  --radius: 0.375rem;
-  --background: oklch(0.975 0.012 85);
-  --paper: oklch(0.99 0.006 85);
-  --foreground: oklch(0.24 0.03 160);
-  --card: oklch(0.99 0.006 85);
-  --card-foreground: oklch(0.24 0.03 160);
-  --popover: oklch(0.99 0.006 85);
-  --popover-foreground: oklch(0.24 0.03 160);
-  --primary: oklch(0.38 0.07 165);
-  --primary-foreground: oklch(0.98 0.01 85);
-  --secondary: oklch(0.93 0.02 85);
-  --secondary-foreground: oklch(0.28 0.04 160);
-  --muted: oklch(0.94 0.015 85);
-  --muted-foreground: oklch(0.5 0.025 160);
-  --accent: oklch(0.9 0.04 160);
-  --accent-foreground: oklch(0.28 0.06 165);
-  --destructive: oklch(0.55 0.19 28);
-  --destructive-foreground: oklch(0.98 0.01 85);
-  --review: oklch(0.8 0.14 78);
-  --review-foreground: oklch(0.3 0.06 60);
-  --confirmed: oklch(0.55 0.11 160);
-  --grid-line: oklch(0.88 0.02 85);
-  --border: oklch(0.87 0.02 85);
-  --input: oklch(0.87 0.02 85);
-  --ring: oklch(0.5 0.08 165);
-  --gradient-ledger: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 31px,
-    color-mix(in oklab, var(--primary) 9%, transparent) 31px,
-    color-mix(in oklab, var(--primary) 9%, transparent) 32px
-  );
-  --shadow-sheet: 0 1px 0 var(--border), 0 18px 40px -24px color-mix(in oklab, var(--primary) 35%, transparent);
+  --radius: 0.5rem;
+  --background: oklch(0.985 0.002 250);
+  --paper: oklch(1 0 0);
+  --foreground: oklch(0.22 0.01 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.01 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.01 255);
+  --primary: oklch(0.52 0.12 160);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.965 0.003 250);
+  --secondary-foreground: oklch(0.3 0.01 255);
+  --muted: oklch(0.965 0.003 250);
+  --muted-foreground: oklch(0.52 0.012 255);
+  --accent: oklch(0.955 0.03 160);
+  --accent-foreground: oklch(0.38 0.09 160);
+  --destructive: oklch(0.58 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --review: oklch(0.82 0.15 80);
+  --review-foreground: oklch(0.42 0.1 65);
+  --confirmed: oklch(0.55 0.12 160);
+  --selected: oklch(0.52 0.12 160);
+  --grid-line: oklch(0.92 0.004 250);
+  --border: oklch(0.91 0.004 250);
+  --input: oklch(0.89 0.005 250);
+  --ring: oklch(0.52 0.12 160);
   --chart-1: oklch(0.55 0.11 160);
   --chart-2: oklch(0.8 0.14 78);
   --chart-3: oklch(0.45 0.07 230);
   --chart-4: oklch(0.6 0.15 40);
   --chart-5: oklch(0.7 0.05 120);
-  --sidebar: oklch(0.96 0.014 85);
-  --sidebar-foreground: oklch(0.24 0.03 160);
-  --sidebar-primary: oklch(0.38 0.07 165);
-  --sidebar-primary-foreground: oklch(0.98 0.01 85);
-  --sidebar-accent: oklch(0.92 0.03 160);
-  --sidebar-accent-foreground: oklch(0.28 0.06 165);
-  --sidebar-border: oklch(0.87 0.02 85);
-  --sidebar-ring: oklch(0.5 0.08 165);
+  --sidebar: oklch(0.985 0.002 250);
+  --sidebar-foreground: oklch(0.22 0.01 255);
+  --sidebar-primary: oklch(0.52 0.12 160);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.955 0.03 160);
+  --sidebar-accent-foreground: oklch(0.38 0.09 160);
+  --sidebar-border: oklch(0.91 0.004 250);
+  --sidebar-ring: oklch(0.52 0.12 160);
 }
 
 @layer base {
@@ -113,18 +106,10 @@
     font-family: var(--font-sans);
   }
   h1, h2, h3 {
-    font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 }
 
-@utility bg-ledger {
-  background-image: var(--gradient-ledger);
-}
-@utility shadow-sheet {
-  box-shadow: var(--shadow-sheet);
-}
 @utility tabular {
   font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
 }

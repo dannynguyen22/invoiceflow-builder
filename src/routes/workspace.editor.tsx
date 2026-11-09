@@ -36,19 +36,19 @@ function Editor() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col">
-      <div className="flex items-center gap-2 border-b bg-review/25 px-4 py-2 text-sm text-review-foreground">
-        <Info className="size-4" aria-hidden /> {t("editor.fixtureNotice")} {t("editor.interactionsPending")}
+    <div className="flex h-[calc(100vh-3rem)] flex-col">
+      <div className="flex items-center gap-2 border-b bg-review/15 px-4 py-1.5 text-xs text-review-foreground">
+        <Info className="size-3.5 shrink-0" aria-hidden /> {t("editor.fixtureNotice")} {t("editor.interactionsPending")}
       </div>
       <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_280px]">
         <div className="grid min-h-0 grid-rows-[1fr_220px]">
           <section aria-label={t("editor.gridRegion")} className="min-h-0 overflow-auto bg-paper">
-            <div className="px-4 py-2 text-xs text-muted-foreground">{t("editor.invoiceCount", { count: FIXTURE_INVOICES.length })}</div>
-            <table className="w-full border-collapse text-sm">
-              <thead className="sticky top-0 bg-secondary">
+            <div className="border-b px-4 py-1.5 text-xs text-muted-foreground">{t("editor.invoiceCount", { count: FIXTURE_INVOICES.length })}</div>
+            <table className="w-full border-collapse text-[13px]">
+              <thead className="sticky top-0 z-10 bg-secondary">
                 <tr>
                   {DEFAULT_COLUMNS.map((c) => (
-                    <th key={c.id} scope="col" className="border border-grid-line px-3 py-2 text-left font-medium">
+                    <th key={c.id} scope="col" className="h-8 border-b border-r border-grid-line px-3 text-left text-xs font-medium text-muted-foreground">
                       {t(`fields.${c.fieldId}`)}
                     </th>
                   ))}
@@ -56,14 +56,15 @@ function Editor() {
               </thead>
               <tbody>
                 {FIXTURE_INVOICES.map((inv) => (
-                  <tr key={inv.document.id}>
+                  <tr key={inv.document.id} className="hover:bg-secondary/60">
                     {DEFAULT_COLUMNS.map((c) => {
                       const cell = fixtureCell(inv, c);
                       const isAmount = c.fieldId === "total_amount" && cell.value;
                       return (
                         <td
                           key={c.id}
-                          className={`tabular border border-grid-line px-3 py-2 ${cell.reviewState === "needs_review" ? "bg-review/30" : ""}`}
+                          data-review={cell.reviewState}
+                          className="tabular h-8 whitespace-nowrap border-b border-r border-grid-line px-3 data-[review=needs_review]:bg-review/15 data-[review=needs_review]:shadow-[inset_2px_0_0_var(--review)]"
                           title={t(`review.${cell.reviewState}`)}
                         >
                           {isAmount ? formatNumber(Number(cell.value)) : cell.value || <span className="text-muted-foreground">{t("editor.emptyCell")}</span>}
@@ -75,21 +76,21 @@ function Editor() {
               </tbody>
             </table>
           </section>
-          <section aria-label={t("editor.previewRegion")} className="border-t bg-muted p-4">
-            <h2 className="text-sm font-semibold">{t("editor.previewRegion")}</h2>
+          <section aria-label={t("editor.previewRegion")} className="border-t bg-background p-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("editor.previewRegion")}</h2>
             <p className="mt-2 text-sm text-muted-foreground">{t("editor.previewEmpty")}</p>
           </section>
         </div>
-        <aside aria-label={t("editor.fieldsRegion")} className="min-h-0 overflow-auto border-l bg-sidebar p-4">
-          <h2 className="text-sm font-semibold">{t("editor.fieldsRegion")}</h2>
-          <Input className="mt-3" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("editor.searchFields")} aria-label={t("editor.searchFields")} />
+        <aside aria-label={t("editor.fieldsRegion")} className="min-h-0 overflow-auto border-l bg-sidebar p-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("editor.fieldsRegion")}</h2>
+          <Input className="mt-2 h-8 text-sm" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("editor.searchFields")} aria-label={t("editor.searchFields")} />
           {groups.length === 0 && <p className="mt-4 text-sm text-muted-foreground">{t("editor.noFieldsFound")}</p>}
           {groups.map(({ g, fields }) => (
             <div key={g} className="mt-4">
-              <h3 className="font-sans text-xs font-medium uppercase tracking-wider text-muted-foreground">{t(`fieldGroups.${g}`)}</h3>
+              <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t(`fieldGroups.${g}`)}</h3>
               <ul className="mt-1.5 space-y-1">
                 {fields.map((f) => (
-                  <li key={f.id} className="rounded border bg-paper px-2.5 py-1.5 text-sm">{t(f.labelKey)}</li>
+                  <li key={f.id} className="rounded-md border bg-paper px-2.5 py-1 text-[13px]">{t(f.labelKey)}</li>
                 ))}
               </ul>
             </div>

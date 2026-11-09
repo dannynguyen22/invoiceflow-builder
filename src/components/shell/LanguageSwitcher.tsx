@@ -4,23 +4,22 @@ import { cn } from "@/lib/utils";
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();
   return (
-    <div role="group" aria-label={t("locale.label")} className="inline-flex items-center rounded-md border bg-paper p-0.5 text-sm">
-      {LOCALES.map((l, i) => (
-        <span key={l} className="flex items-center">
-          {i > 0 && <span aria-hidden className="px-0.5 text-muted-foreground">|</span>}
-          <button
-            type="button"
-            lang={l}
-            aria-pressed={locale === l}
-            onClick={() => setLocale(l)}
-            className={cn(
-              "rounded-sm px-2.5 py-1 transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-              locale === l ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t(`locale.${l}`)}
-          </button>
-        </span>
+    <div role="group" aria-label={t("locale.label")} className="inline-flex items-center gap-0.5 rounded-md border bg-secondary p-0.5 text-xs">
+      {LOCALES.map((l) => (
+        <button
+          key={l}
+          type="button"
+          lang={l}
+          aria-pressed={locale === l}
+          onClick={() => setLocale(l)}
+          className={cn(
+            "rounded px-2 py-1 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+            locale === l ? "bg-paper text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <span className="hidden sm:inline">{t(`locale.${l}`)}</span>
+          <span className="sm:hidden" aria-label={t(`locale.${l}`)}>{l.toUpperCase()}</span>
+        </button>
       ))}
     </div>
   );
